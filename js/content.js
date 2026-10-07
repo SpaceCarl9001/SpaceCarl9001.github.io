@@ -24,7 +24,7 @@ export default {
     summary: 'A real-time analyst who codes: I watch the numbers live, then build tools so the team spends less time on repetitive work.',
     body: [
       'By day I work in Workforce Management as a Real-Time Analyst (RTA), keeping staffing, adherence and service levels on target while the day unfolds.',
-      'Alongside that I build web apps and automations for my team: dashboards, trackers and scripts that turn repetitive manual steps into one click. Edit this paragraph to describe your favourite one.',
+      'Alongside that I build web apps and automations for my team, like a PTO capacity dashboard, a no-click attendance notification flow and a shift bidding app that generates schedules on its own.',
     ],
     facts: [
       { label: 'Day job', value: 'WFM · RTA' },
@@ -52,41 +52,38 @@ export default {
       category: 'Automation',
       accent: '#a3e635',
       summary: 'Turning repetitive manual steps into one click.',
-      items: ['Google Apps Script', 'Excel & VBA', 'Python', 'Power Automate', 'Webhooks', 'Low-code apps'],
+      items: ['Google Sheets', 'Google Forms', 'Slack', 'Assembled', 'Google Apps Script', 'Webhooks'],
     },
   ],
 
-  // EXAMPLE PROJECTS: replace these with your real work (title, what it does, the result, links).
+  // Add `year: '2025'` or links like `links: [{ label: 'Demo', url: 'https://…' }]` to any project.
   projects: [
     {
-      title: 'RTA Live Board',
-      year: '2026',
+      title: 'PTO Capacity Dashboard',
       accent: '#ff6b35',
-      tagline: 'A real-time board showing who is on, off and out of adherence.',
+      tagline: 'Daily shrinkage, overtime and absence tracking for every line of business.',
       description:
-        'Example: a live dashboard that pulls agent states every minute and flags adherence and service-level risks early, so the floor can react before the numbers slip.',
-      tags: ['JavaScript', 'APIs', 'Dashboards'],
-      links: [{ label: 'Live demo', url: 'https://example.com' }],
+        'Tracks planned and unplanned shrinkage, total overtime and daily absences across all LOBs in one place, so the team can see at a glance whether we are about to exceed the planned shrinkage threshold.',
+      tags: ['Shrinkage', 'Overtime', 'Absence tracking', 'All LOBs'],
+      links: [],
     },
     {
-      title: 'Intraday Alert Bot',
-      year: '2025',
+      title: 'Attendance Notification Automation',
       accent: '#f43f5e',
-      tagline: 'Automatic chat alerts when queues or service levels go off-track.',
+      tagline: 'From Slack to Sheets to Assembled, with zero clicks.',
       description:
-        'Example: a scheduled script that checks queue stats and posts a heads-up to the team chat when thresholds are crossed. Replace this with one of your own automations.',
-      tags: ['Automation', 'Webhooks', 'Apps Script'],
-      links: [{ label: 'Source code', url: 'https://github.com/your-username/intraday-alerts' }],
+        'Attendance notifications used to be coded and plotted by hand, from Slack into Google Sheets and then into Assembled. This automation takes over the whole chain, so it now happens with no clicks at all.',
+      tags: ['Slack', 'Google Sheets', 'Assembled', 'Automation'],
+      links: [],
     },
     {
-      title: 'Schedule Change Tracker',
-      year: '2025',
+      title: 'Shift Bidding App',
       accent: '#14b8a6',
-      tagline: 'A simple web form and log that replaced a messy shared spreadsheet.',
+      tagline: 'Rank-based shift bidding and smart schedules in a live web app.',
       description:
-        'Example: a small web app for submitting shift swaps and schedule changes, with an approval log and automatic summary emails. Replace this with one of your own projects.',
-      tags: ['Web app', 'Forms', 'Email automation'],
-      links: [{ label: 'Live demo', url: 'https://example.com' }],
+        'Replaced manual bidding through Google Forms and Google Sheets with a live web app that automatically assigns each agent a schedule shell based on their current rank. Its Smart Schedule feature auto-generates the best schedule for team leaders so the team covers all hours of operation (HOOP), and assigns agents evenly across leaders based on how many hours they overlap.',
+      tags: ['Web app', 'Rank-based assignment', 'Schedule optimization', 'HOOP coverage'],
+      links: [],
     },
     {
       title: 'Road Trip Portfolio',

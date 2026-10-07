@@ -76,6 +76,16 @@ function wrap(ctx, text, x, y, maxW, lh, maxLines = 99) {
   return y + lines.length * lh;
 }
 
+function countLines(ctx, text, font, maxW) {
+  ctx.font = font;
+  let lines = 1, line = '';
+  for (const word of String(text).split(/\s+/)) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxW && line) { lines++; line = word; } else line = test;
+  }
+  return lines;
+}
+
 function chips(ctx, items, x, y, maxW, o) {
   const { size = 34, padX = 24, h = 64, gap = 14, fill, stroke, color, maxRows = 3 } = o;
   ctx.font = `600 ${size}px ${F.body}`;
@@ -359,11 +369,21 @@ function drawProject(ctx, w, h, s) {
   ctx.fillText(s.kicker.toUpperCase(), 92, 80);
   spacing(ctx, 0);
   ctx.fillStyle = '#111111';
-  const size = fit(ctx, s.title, 700, 116, F.display, 1100);
-  ctx.fillText(s.title, 88, 126);
+  // Long titles wrap onto two big lines rather than shrinking to unreadable from the road.
+  let titleBottom;
+  if (fit(ctx, s.title, 700, 116, F.display, 1100) >= 92) {
+    const size = fit(ctx, s.title, 700, 116, F.display, 1100);
+    ctx.fillText(s.title, 88, 126);
+    titleBottom = 126 + size;
+  } else {
+    let size = 100;
+    while (size > 64 && countLines(ctx, s.title, `700 ${size}px ${F.display}`, 1100) > 2) size -= 4;
+    ctx.font = `700 ${size}px ${F.display}`;
+    titleBottom = wrap(ctx, s.title, 88, 120, 1100, size * 1.04, 2) - 4;
+  }
   ctx.fillStyle = '#45454a';
   ctx.font = `400 42px ${F.body}`;
-  const y = wrap(ctx, s.summary, 92, 126 + size + 24, 960, 58, 3);
+  const y = wrap(ctx, s.summary, 92, titleBottom + 24, 960, 58, titleBottom > 260 ? 2 : 3);
   chips(ctx, s.chips, 92, y + 30, 960, { fill: withAlpha(accent, 0.16), color: '#141414', maxRows: 2 });
   vignette(ctx, w, h, 0.18);
 }
