@@ -13,8 +13,8 @@ function linkHTML({ label, url }, className = 'btn') {
 
 /** One stop = one sign on the road + one info card. */
 export function buildStops(c) {
-  const { profile, about, skills = [], projects = [], contact } = c;
-  const destinations = ['About', skills.length && 'Skills', projects.length && 'Projects', 'Contact'].filter(Boolean);
+  const { profile, about, skills = [], projects = [], contact, experience = [], education = [], awards = [] } = c;
+  const destinations = ['About', experience.length && 'Experience', skills.length && 'Skills', projects.length && 'Projects', 'Contact'].filter(Boolean);
   const stops = [];
 
   stops.push({
@@ -29,6 +29,31 @@ export function buildStops(c) {
     kicker: 'About me', title: about.title, summary: about.summary,
     body: about.body, facts: about.facts, photo: about.photo, initials: profile.initials,
   });
+
+  if (education.length || awards.length) {
+    stops.push({
+      group: 'About', kind: 'billboard', variant: 'education', accent: '#c084fc',
+      kicker: 'Education & awards', title: 'Education & Awards', education, awards,
+    });
+  }
+
+  // Featured jobs get their own billboard; the rest share one "Where I started" timeline.
+  const featured = experience.filter((j) => j.featured);
+  const earlier = experience.filter((j) => !j.featured);
+  featured.forEach((j) => stops.push({
+    group: 'Experience', kind: 'billboard', variant: 'job', accent: j.accent || '#38bdf8',
+    kicker: `Experience · ${j.start} – ${j.end}`, title: j.role,
+    subtitle: [j.company, j.account].filter(Boolean).join(' · '),
+    company: j.company, account: j.account, bullets: j.bullets, chips: j.tags,
+  }));
+  if (earlier.length) {
+    const year = (s) => String(s).split(' ').pop();
+    stops.push({
+      group: 'Experience', kind: 'billboard', variant: 'timeline', accent: '#94a3b8',
+      kicker: `Experience · ${year(earlier[earlier.length - 1].start)} – ${year(earlier[0].end)}`,
+      title: 'Where I started', timeline: earlier,
+    });
+  }
 
   skills.forEach((s, i) => stops.push({
     group: 'Skills', kind: 'billboard', variant: 'skill', accent: s.accent || '#38bdf8',
@@ -58,6 +83,22 @@ export function cardHTML(stop) {
   (stop.body || []).forEach((p) => out.push(`<p class="card-text">${esc(p)}</p>`));
   if (stop.facts?.length) {
     out.push(`<dl class="facts">${stop.facts.map((f) => `<div><dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd></div>`).join('')}</dl>`);
+  }
+  if (stop.bullets?.length) out.push(`<ul class="card-bullets">${stop.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`);
+  if (stop.timeline?.length) {
+    out.push(`<ol class="card-timeline">${stop.timeline.map((j) => `
+      <li>
+        <span class="when">${esc(j.start)} – ${esc(j.end)}</span>
+        <strong>${esc(j.role)}</strong>
+        <span class="where">${esc([j.company, j.account].filter(Boolean).join(' · '))}</span>
+        ${j.summary ? `<span class="what">${esc(j.summary)}</span>` : ''}
+      </li>`).join('')}</ol>`);
+  }
+  if (stop.education?.length) {
+    out.push(`<ul class="card-edu">${stop.education.map((e) => `<li><strong>${esc(e.school)}</strong><span>${esc(e.detail)}</span></li>`).join('')}</ul>`);
+  }
+  if (stop.awards?.length) {
+    out.push(`<p class="card-label">Awards</p><ul class="card-bullets card-awards">${stop.awards.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>`);
   }
   if (stop.chips?.length) out.push(`<ul class="chips">${stop.chips.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>`);
 
@@ -129,8 +170,9 @@ export function clusterSVG() {
 
 /** Plain, accessible version of everything: used by screen readers and the "Text version" toggle. */
 export function renderStatic(c, el) {
-  const { profile, about, skills = [], projects = [], contact } = c;
+  const { profile, about, skills = [], projects = [], contact, experience = [], education = [], awards = [] } = c;
   const links = (list = []) => list.map((l) => linkHTML(l, 's-link')).join('');
+  const where = (j) => esc([j.company, j.account].filter(Boolean).join(' · '));
   el.innerHTML = `
     <header class="s-hero">
       <p class="s-kicker">Portfolio</p>
@@ -145,6 +187,30 @@ export function renderStatic(c, el) {
       ${(about.body || []).map((p) => `<p>${esc(p)}</p>`).join('')}
       ${about.facts?.length ? `<dl class="s-facts">${about.facts.map((f) => `<div><dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd></div>`).join('')}</dl>` : ''}
     </section>
+
+    ${experience.length ? `
+    <section class="s-section" aria-labelledby="s-experience">
+      <h2 id="s-experience">Experience</h2>
+      <ol class="s-jobs">
+        ${experience.map((j) => `
+          <li class="s-job" style="--accent:${esc(j.accent || '#94a3b8')}">
+            <p class="s-meta">${esc(j.start)} – ${esc(j.end)}</p>
+            <h3>${esc(j.role)}</h3>
+            <p class="s-where">${where(j)}</p>
+            ${j.bullets?.length ? `<ul>${j.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
+            ${j.summary ? `<p>${esc(j.summary)}</p>` : ''}
+          </li>`).join('')}
+      </ol>
+    </section>` : ''}
+
+    ${education.length || awards.length ? `
+    <section class="s-section" aria-labelledby="s-education">
+      <h2 id="s-education">Education &amp; Awards</h2>
+      <div class="s-grid">
+        ${education.length ? `<div>${education.map((e) => `<h3>${esc(e.school)}</h3><p>${esc(e.detail)}</p>`).join('')}</div>` : ''}
+        ${awards.length ? `<div><h3>Awards</h3><ul class="s-awards">${awards.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : ''}
+      </div>
+    </section>` : ''}
 
     ${skills.length ? `
     <section class="s-section" aria-labelledby="s-skills">

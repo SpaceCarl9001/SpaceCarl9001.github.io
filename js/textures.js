@@ -86,6 +86,33 @@ function countLines(ctx, text, font, maxW) {
   return lines;
 }
 
+/**
+ * Draws a headline that stays readable from the road: one line if it fits at a decent size,
+ * otherwise two big lines. Returns the y just below it.
+ */
+function bigTitle(ctx, text, x, y, maxW, maxSize) {
+  const one = fit(ctx, text, 700, maxSize, F.display, maxW);
+  if (one >= maxSize * 0.8) {
+    ctx.fillText(text, x, y);
+    return y + one;
+  }
+  let size = Math.round(maxSize * 0.86);
+  while (size > 60 && countLines(ctx, text, `700 ${size}px ${F.display}`, maxW) > 2) size -= 4;
+  ctx.font = `700 ${size}px ${F.display}`;
+  return wrap(ctx, text, x, y - 6, maxW, size * 1.04, 2) - 4;
+}
+
+function star(ctx, cx, cy, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
 function chips(ctx, items, x, y, maxW, o) {
   const { size = 34, padX = 24, h = 64, gap = 14, fill, stroke, color, maxRows = 3 } = o;
   ctx.font = `600 ${size}px ${F.body}`;
@@ -197,8 +224,8 @@ function drawStart(ctx, w, h, s) {
   fit(ctx, s.subtitle, 600, 58, F.sign, w - 520);
   ctx.fillText(s.subtitle, 92, 312);
   ctx.fillRect(92, h - 158, w - 520, 6);
-  ctx.font = `700 46px ${F.sign}`;
   spacing(ctx, 2);
+  fit(ctx, s.signLine.toUpperCase(), 700, 46, F.sign, w - 520);
   ctx.fillText(s.signLine.toUpperCase(), 92, h - 126);
   spacing(ctx, 0);
   arrowUp(ctx, w - 300, 110, 170, h - 220);
@@ -369,18 +396,7 @@ function drawProject(ctx, w, h, s) {
   ctx.fillText(s.kicker.toUpperCase(), 92, 80);
   spacing(ctx, 0);
   ctx.fillStyle = '#111111';
-  // Long titles wrap onto two big lines rather than shrinking to unreadable from the road.
-  let titleBottom;
-  if (fit(ctx, s.title, 700, 116, F.display, 1100) >= 92) {
-    const size = fit(ctx, s.title, 700, 116, F.display, 1100);
-    ctx.fillText(s.title, 88, 126);
-    titleBottom = 126 + size;
-  } else {
-    let size = 100;
-    while (size > 64 && countLines(ctx, s.title, `700 ${size}px ${F.display}`, 1100) > 2) size -= 4;
-    ctx.font = `700 ${size}px ${F.display}`;
-    titleBottom = wrap(ctx, s.title, 88, 120, 1100, size * 1.04, 2) - 4;
-  }
+  const titleBottom = bigTitle(ctx, s.title, 88, 126, 1100, 116);
   ctx.fillStyle = '#45454a';
   ctx.font = `400 42px ${F.body}`;
   const y = wrap(ctx, s.summary, 92, titleBottom + 24, 960, 58, titleBottom > 260 ? 2 : 3);
@@ -388,7 +404,147 @@ function drawProject(ctx, w, h, s) {
   vignette(ctx, w, h, 0.18);
 }
 
-const DRAW = { start: drawStart, end: drawEnd, about: drawAbout, skill: drawSkill, project: drawProject };
+function drawJob(ctx, w, h, s) {
+  const accent = s.accent;
+  const bg = ctx.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, '#12203a');
+  bg.addColorStop(1, '#1d3459');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 18;
+  for (let x = -h; x < w; x += 70) {
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x + h, 0);
+    ctx.stroke();
+  }
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, 0, 28, h);
+
+  if (/present/i.test(s.kicker)) {
+    ctx.font = `700 28px ${F.sign}`;
+    spacing(ctx, 4);
+    const label = 'CURRENT ROLE';
+    const bw = ctx.measureText(label).width + 48;
+    rr(ctx, w - bw - 60, 56, bw, 54, 27);
+    ctx.fillStyle = accent;
+    ctx.fill();
+    ctx.fillStyle = '#0b1220';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, w - bw - 36, 85);
+    ctx.textBaseline = 'top';
+    spacing(ctx, 0);
+  }
+
+  ctx.fillStyle = accent;
+  ctx.font = `700 32px ${F.display}`;
+  spacing(ctx, 5);
+  ctx.fillText(s.kicker.toUpperCase(), 92, 74);
+  spacing(ctx, 0);
+  ctx.fillStyle = '#ffffff';
+  const bottom = bigTitle(ctx, s.title, 88, 130, 1090, 104);
+  ctx.fillStyle = '#c8d3e6';
+  fit(ctx, s.subtitle, 600, 40, F.body, 1090);
+  ctx.fillText(s.subtitle, 92, bottom + 20);
+  chips(ctx, s.chips, 92, bottom + 96, 1100, { stroke: accent, fill: 'rgba(255,255,255,0.05)', color: '#ffffff', maxRows: 2 });
+  vignette(ctx, w, h, 0.3);
+}
+
+function drawTimeline(ctx, w, h, s) {
+  const accent = '#3b6fb6';
+  ctx.fillStyle = '#f4f1ea';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#1d3459';
+  ctx.fillRect(0, 0, w, 20);
+  ctx.fillStyle = accent;
+  ctx.font = `700 32px ${F.display}`;
+  spacing(ctx, 5);
+  ctx.fillText(s.kicker.toUpperCase(), 92, 70);
+  spacing(ctx, 0);
+  ctx.fillStyle = '#141414';
+  ctx.font = `700 92px ${F.display}`;
+  ctx.fillText(s.title, 88, 112);
+
+  const items = (s.timeline || []).slice(0, 4);
+  const top = 232, row = (h - top - 26) / Math.max(items.length, 1);
+  ctx.fillStyle = withAlpha(accent, 0.35);
+  ctx.fillRect(116, top + 14, 6, row * (items.length - 1) + 4);
+  items.forEach((j, i) => {
+    const y = top + i * row;
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(119, y + 18, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f4f1ea';
+    ctx.beginPath();
+    ctx.arc(119, y + 18, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = accent;
+    ctx.font = `700 28px ${F.sign}`;
+    spacing(ctx, 2);
+    ctx.fillText(`${j.start} – ${j.end}`.toUpperCase(), 160, y);
+    spacing(ctx, 0);
+    ctx.fillStyle = '#141414';
+    fit(ctx, j.role, 700, 42, F.display, 1050, 24);
+    ctx.fillText(j.role, 160, y + 32);
+    ctx.fillStyle = '#5b5b62';
+    fit(ctx, [j.company, j.account].filter(Boolean).join(' · '), 500, 29, F.body, 1050, 18);
+    ctx.fillText([j.company, j.account].filter(Boolean).join(' · '), 160, y + 80);
+  });
+  vignette(ctx, w, h, 0.16);
+}
+
+function drawEducation(ctx, w, h, s) {
+  const accent = s.accent;
+  const bg = ctx.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, '#1d1233');
+  bg.addColorStop(1, '#30205a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+  const glow = ctx.createRadialGradient(w - 200, 120, 10, w - 200, 120, 520);
+  glow.addColorStop(0, withAlpha(accent, 0.3));
+  glow.addColorStop(1, withAlpha(accent, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = accent;
+  ctx.font = `700 32px ${F.display}`;
+  spacing(ctx, 5);
+  ctx.fillText(s.kicker.toUpperCase(), 92, 70);
+  spacing(ctx, 0);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 92px ${F.display}`;
+  ctx.fillText(s.title, 88, 112);
+
+  let y = 262;
+  for (const e of (s.education || []).slice(0, 3)) {
+    ctx.fillStyle = '#ffffff';
+    fit(ctx, e.school, 700, 40, F.display, 470, 24);
+    ctx.fillText(e.school, 92, y);
+    ctx.fillStyle = '#c9bfe0';
+    ctx.font = `400 28px ${F.body}`;
+    y = wrap(ctx, e.detail, 92, y + 50, 470, 36, 2) + 34;
+  }
+
+  ctx.fillStyle = withAlpha(accent, 0.35);
+  ctx.fillRect(610, 262, 3, h - 330);
+  y = 258;
+  ctx.font = `500 30px ${F.body}`;
+  for (const a of (s.awards || []).slice(0, 5)) {
+    ctx.fillStyle = '#ffd36b';
+    star(ctx, 668, y + 18, 17);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `500 30px ${F.body}`;
+    y = wrap(ctx, a, 702, y, 500, 38, 2) + 22;
+  }
+  vignette(ctx, w, h, 0.3);
+}
+
+const DRAW = {
+  start: drawStart, end: drawEnd, about: drawAbout, skill: drawSkill, project: drawProject,
+  job: drawJob, timeline: drawTimeline, education: drawEducation,
+};
 
 export function drawSign(stop, photo) {
   const [w, h] = SIGN_SIZE[stop.kind];

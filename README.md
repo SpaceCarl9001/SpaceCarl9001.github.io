@@ -30,6 +30,8 @@ billboards, info cards, route bar and text version are all generated from it.
 |------------|------------------|
 | `profile`  | Name, initials (top-left badge and steering wheel), role, one-line tagline. Shown on the green "Now entering" sign. |
 | `about`    | The About billboard and card. Add `photo: 'assets/me.jpg'` to replace the initials circle with your photo. |
+| `education`, `awards` | One "Education & Awards" billboard after About. |
+| `experience` | Jobs, newest first. Jobs marked `featured: true` get their own billboard; the rest share a "Where I started" timeline. |
 | `skills`   | One billboard per category. Add or remove categories freely. |
 | `projects` | One billboard per project, each with its own `accent` colour, tags and links. |
 | `contact`  | The blue "Destination" sign at the end: email and social links. |

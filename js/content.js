@@ -6,7 +6,7 @@
  *  the text-only version of the site is generated from this file, so
  *  you never have to touch the 3D code to update your portfolio.
  *
- *  - Add or remove skills / projects freely: the road grows or shrinks.
+ *  - Add or remove skills / projects / jobs freely: the road grows or shrinks.
  *  - `accent` colours are any CSS hex colour (#rrggbb).
  *  - Links that start with http(s) open in a new tab.
  * ─────────────────────────────────────────────────────────────────────
@@ -15,44 +15,131 @@ export default {
   profile: {
     name: 'Carl Flores',
     initials: 'CF',
-    role: 'WFM Real-Time Analyst · Web Dev & Automation',
-    tagline: 'I keep workforce operations on track in real time, and build the web tools and automations that take busywork off my team.',
+    role: 'Workforce Real-Time Analyst · Automation & Web Apps',
+    tagline: '9+ years in contact centers, from the phones to team lead to real-time analyst. I keep operations on target and build tools that take busywork off my team.',
   },
 
   about: {
     title: "Hi, I'm Carl.",
-    summary: 'A real-time analyst who codes: I watch the numbers live, then build tools so the team spends less time on repetitive work.',
+    summary: 'I started on the phones, led a support team, and now work as a real-time analyst who builds tools so the team works smarter.',
     body: [
-      'By day I work in Workforce Management as a Real-Time Analyst (RTA), keeping staffing, adherence and service levels on target while the day unfolds.',
-      'Alongside that I build web apps and automations for my team, like a PTO capacity dashboard, a no-click attendance notification flow and a shift bidding app that generates schedules on its own.',
+      "I'm a Workforce Management professional with real-time analysis, team leadership and technical support experience. I'm data-driven about schedule adherence and performance monitoring, with a consistent track record of improving efficiency and customer satisfaction.",
+      'Alongside the day job I build web apps and automations for my team, like a PTO capacity dashboard, a no-click attendance notification flow and a shift bidding app that generates schedules on its own.',
     ],
     facts: [
-      { label: 'Day job', value: 'WFM · RTA' },
-      { label: 'Builds', value: 'Web tools' },
-      { label: 'Automates', value: 'Team workflows' },
+      { label: 'Based in', value: 'Dumaguete, PH' },
+      { label: 'Experience', value: '9+ years' },
+      { label: 'Now', value: 'WFM · RTA' },
     ],
     // Optional: a square-ish photo, e.g. 'assets/me.jpg'. Leave empty to show your initials.
     photo: '',
   },
 
+  education: [
+    { school: 'Silliman University', detail: 'BS Electrical Engineering (3rd year, undergraduate)' },
+    { school: 'Piapi High School', detail: 'Secondary Education, 2010–2014' },
+  ],
+
+  awards: [
+    'DepEd Most Outstanding Student of the Year, 2014',
+    'Class Valedictorian, 2014',
+    'Best in Science and English, 2014',
+    'Editor-in-Chief, Northern Quill, 2014',
+    'National Finalist, Sports Writing (Press Conference), 2014',
+  ],
+
+  // Newest first. `featured` jobs get their own billboard; the rest share an "Earlier roles" timeline.
+  experience: [
+    {
+      featured: true,
+      role: 'Workforce Real-Time Analyst (RTA)',
+      company: 'ECE Contact Centers',
+      account: 'Sales/Retail Account',
+      start: 'Feb 2025',
+      end: 'Present',
+      accent: '#38bdf8',
+      tags: ['Queue monitoring', 'Adherence', 'Intraday trends', 'SLA', 'Dashboards'],
+      bullets: [
+        'Monitor real-time queue performance, service levels and agent adherence, escalating deviations to maintain SLA compliance.',
+        'Analyze intraday call volume and staffing trends to recommend schedule adjustments and prevent service level breaches.',
+        'Partner with team leaders and operations managers to optimize agent utilization and real-time break/schedule planning.',
+        'Build and maintain real-time and historical reporting dashboards in Excel/Google Sheets for leadership visibility.',
+      ],
+    },
+    {
+      featured: true,
+      role: 'Tech Support Team Leader',
+      company: 'ECE Contact Centers',
+      account: 'Home Security System Account',
+      start: 'Feb 2022',
+      end: 'Feb 2025',
+      accent: '#f59e0b',
+      tags: ['Coaching', 'AHT', 'CSAT', 'First-contact resolution', 'Escalations'],
+      bullets: [
+        'Led and coached technical support agents, driving performance against KPIs including AHT, CSAT and first-contact resolution.',
+        'Handled escalated technical issues and complex concerns beyond frontline agent scope.',
+        'Delivered one-on-one coaching and feedback, supporting agent development and retention.',
+        'Coordinated with Workforce Management on staffing and schedule adherence to meet service level targets.',
+      ],
+    },
+    {
+      role: 'T1 E-commerce/Retail Specialist → T3 Tech Support SME',
+      company: 'ECE Contact Centers',
+      account: 'Home Security System',
+      start: 'Sept 2020',
+      end: 'Feb 2022',
+      summary: 'Sales specialist for orders, returns and replacements; mentored agents on troubleshooting and escalations, and maintained knowledge-base documentation.',
+    },
+    {
+      role: 'Customer Support Representative',
+      company: 'ECE Contact Centers',
+      account: 'Financial App (T1 Chat Support)',
+      start: 'May 2019',
+      end: 'Sept 2020',
+      summary: 'Tier-1 live chat support for account, transaction and technical inquiries, following strict data-security and compliance protocols.',
+    },
+    {
+      role: 'Subject Matter Expert, Benefits & Claims',
+      company: 'Teletech',
+      account: 'B2B Healthcare Account',
+      start: 'Sep 2017',
+      end: 'Jul 2018',
+      summary: 'SME for escalations, training and process questions; consistently met call quality, handling time and customer satisfaction metrics.',
+    },
+    {
+      role: 'Customer Service Representative',
+      company: 'Qualfon',
+      account: 'Telco Account',
+      start: 'Mar 2016',
+      end: 'Aug 2017',
+      summary: 'Handled inbound calls resolving billing and service inquiries, keeping accurate customer interaction records.',
+    },
+  ],
+
   skills: [
     {
       category: 'Workforce Management',
       accent: '#38bdf8',
-      summary: 'Keeping service levels on target while the day unfolds.',
-      items: ['Real-time monitoring', 'Intraday management', 'Adherence', 'Service level & AHT', 'Scheduling', 'Reporting'],
+      summary: 'Real-time analysis that keeps service levels and adherence on target.',
+      items: ['Real-time queue monitoring', 'Schedule adherence', 'Intraday analysis', 'SLA management', 'Break & schedule planning', 'Real-time & historical reporting'],
     },
     {
-      category: 'Web Development',
-      accent: '#a78bfa',
-      summary: 'Internal web apps and dashboards my team uses every day.',
-      items: ['HTML & CSS', 'JavaScript', 'Node.js', 'REST APIs', 'Three.js', 'Git & GitHub'],
+      category: 'Leadership & Support',
+      accent: '#f59e0b',
+      summary: 'Coaching agents and solving the tough tickets.',
+      items: ['Team leadership', 'Coaching & feedback', 'AHT · CSAT · FCR', 'Escalation handling', 'Technical troubleshooting', 'Clear written & verbal English'],
     },
     {
-      category: 'Automation',
+      category: 'Automation & Web Apps',
       accent: '#a3e635',
       summary: 'Turning repetitive manual steps into one click.',
-      items: ['Google Sheets', 'Google Forms', 'Slack', 'Assembled', 'Google Apps Script', 'Webhooks'],
+      items: ['Advanced Excel & Google Sheets', 'AI-assisted workflows', 'Process automation', 'Web apps', 'Dashboards'],
+    },
+    {
+      category: 'Tools & Platforms',
+      accent: '#a78bfa',
+      summary: 'The platforms I work in every day.',
+      items: ['Assembled', 'Five9', 'Zendesk', 'Intercom', 'Zoho', 'Shopify', 'Jira', 'Asana', 'Slack'],
     },
   ],
 
@@ -99,11 +186,11 @@ export default {
 
   contact: {
     headline: "Let's work together",
-    message: 'Have a project, a role, or just want to say hi? My inbox is always open.',
-    email: 'you@example.com',
+    message: "Have a role, a project, or just want to say hi? I'm based in Dumaguete City, Philippines, and my inbox is always open.",
+    email: 'florezcarl9001@gmail.com',
+    // Add LinkedIn here when ready: { label: 'LinkedIn', url: 'https://www.linkedin.com/in/…' }
     links: [
       { label: 'GitHub', url: 'https://github.com/SpaceCarl9001' },
-      { label: 'LinkedIn', url: 'https://www.linkedin.com/in/your-profile' },
     ],
   },
 };

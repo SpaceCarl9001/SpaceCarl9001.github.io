@@ -294,6 +294,78 @@ a { color: inherit; }
   background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
+.card-bullets {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.card-bullets li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.84);
+}
+.card-bullets li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.6em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.card-awards li::before { content: '★'; background: none; width: auto; height: auto; top: 0; left: 0; color: #ffd36b; font-size: 12px; }
+
+.card-label {
+  margin: 18px 0 0;
+  font-family: var(--font-sign);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+
+.card-timeline {
+  margin: 16px 0 0;
+  padding: 0 0 0 18px;
+  list-style: none;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  display: grid;
+  gap: 11px;
+}
+.card-timeline li { position: relative; display: grid; gap: 1px; }
+.card-timeline li::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 12, 18, 0.9);
+}
+.card-timeline .when { font: 700 11px var(--font-sign); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.card-timeline strong { font-size: 14px; line-height: 1.3; }
+.card-timeline .where { font-size: 12.5px; color: var(--hud-muted); }
+.card-timeline .what { font-size: 12.5px; line-height: 1.45; color: rgba(255, 255, 255, 0.76); margin-top: 1px; }
+/* the timeline card holds a lot: give it the full height above the dashboard */
+@media (min-width: 761px) {
+  .card:has(.card-timeline) { top: 84px; transform: translate(-14px, 0); max-height: calc(100vh - var(--dash-h) - 100px); }
+  .card[data-side="right"]:has(.card-timeline) { transform: translate(14px, 0); }
+  .card.show:has(.card-timeline) { transform: translate(0, 0); }
+}
+
+.card-edu { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.card-edu li { display: grid; gap: 2px; }
+.card-edu strong { font-family: var(--font-display); font-size: 16px; }
+.card-edu span { font-size: 13.5px; color: var(--hud-muted); }
+
 .card-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .btn {
   display: inline-flex;
@@ -575,6 +647,14 @@ body.text-mode .static {
 }
 .s-link:hover { border-color: var(--page-muted); }
 .s-link-primary { background: var(--page-text); color: var(--page-bg); border-color: transparent; }
+
+.s-jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.s-job { padding-left: 18px; border-left: 3px solid var(--accent); }
+.s-job h3 { font-size: 20px; margin-bottom: 2px; }
+.s-where { margin: 0 0 8px; color: var(--page-muted); font-weight: 600; }
+.s-job ul { margin: 0; padding-left: 20px; max-width: 68ch; }
+.s-job li + li { margin-top: 4px; }
+.s-awards { margin: 0; padding-left: 20px; }
 
 .noscript { padding: 24px 16px; text-align: center; }
 
