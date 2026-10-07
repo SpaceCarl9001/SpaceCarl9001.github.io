@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Portfolio</title>
+  <meta name="description" content="An interactive portfolio: scroll to drive down the road past my skills and projects.">
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='10' width='56' height='44' rx='8' fill='%230e6b3e' stroke='white' stroke-width='4'/%3E%3Cpath d='M32 18l12 14h-8v14h-8V32h-8z' fill='white'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Overpass:wght@600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="loader" class="loader" role="status">
+    <div class="loader-dial" aria-hidden="true"><span></span></div>
+    <p>Starting the engine…</p>
+  </div>
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <header class="topbar">
+    <a id="brand" class="brand" href="#">
+      <span id="brandBadge" class="brand-badge"></span>
+      <span id="brandName" class="brand-name"></span>
+    </a>
+    <nav id="route" class="route" aria-label="Sections"></nav>
+    <button id="modeToggle" class="mode-toggle" type="button" aria-pressed="false">Text version</button>
+  </header>
+
+  <aside id="card" class="card" aria-live="polite" inert></aside>
+
+  <div class="cockpit" aria-hidden="true">
+    <svg class="dash" viewBox="0 0 1000 200" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="dashFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2b2e35"/>
+          <stop offset="0.22" stop-color="#17191e"/>
+          <stop offset="1" stop-color="#0a0b0d"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,64 C180,34 340,24 500,24 C660,24 820,34 1000,64 L1000,200 L0,200 Z" fill="url(#dashFill)"/>
+      <path d="M0,64 C180,34 340,24 500,24 C660,24 820,34 1000,64" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    </svg>
+
+    <div id="cluster" class="cluster"></div>
+
+    <div class="screen">
+      <div class="screen-head"><span>NAV</span><span id="clock">06:00</span></div>
+      <div id="navNow" class="screen-now">Start line</div>
+      <div id="navNext" class="screen-next"></div>
+      <div class="screen-bar"><span id="navBar"></span></div>
+    </div>
+
+    <svg class="wheel" viewBox="-200 -200 400 400">
+      <defs>
+        <linearGradient id="rimShine" x1="0" y1="-1" x2="0" y2="1">
+          <stop offset="0" stop-color="#4a4e57"/>
+          <stop offset="0.5" stop-color="#1a1c21"/>
+          <stop offset="1" stop-color="#0d0e11"/>
+        </linearGradient>
+      </defs>
+      <circle r="170" fill="none" stroke="url(#rimShine)" stroke-width="32"/>
+      <circle r="170" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" transform="scale(1.08)"/>
+      <g stroke="#17191d" stroke-linecap="round">
+        <line x1="-160" y1="16" x2="-52" y2="8" stroke-width="34"/>
+        <line x1="160" y1="16" x2="52" y2="8" stroke-width="34"/>
+        <line x1="0" y1="44" x2="0" y2="160" stroke-width="40"/>
+      </g>
+      <circle r="60" fill="#1d2026" stroke="#2e323a" stroke-width="3"/>
+      <circle r="30" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+      <text id="wheelLogo" class="wheel-logo" y="8"></text>
+    </svg>
+  </div>
+
+  <div id="track" class="track" aria-hidden="true"></div>
+
+  <main id="static" class="static"></main>
+
+  <noscript>
+    <p class="noscript">This portfolio is an interactive drive and needs JavaScript turned on.</p>
+  </noscript>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

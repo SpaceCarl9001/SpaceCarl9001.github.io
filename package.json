@@ -1,0 +1,9 @@
+{
+  "name": "road-trip-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A scroll-driven 3D portfolio: drive down the road past my skills and projects.",
+  "scripts": {
+    "start": "node serve.js"
+  }
+}
