@@ -96,7 +96,7 @@ export default {
       description:
         'A Three.js scene where scrolling drives a car from the countryside, through a forest and along the coast to a city at night. Every sign is drawn at runtime from a single content file.',
       tags: ['Three.js', 'WebGL', 'Shaders'],
-      links: [{ label: 'Source code', url: 'https://github.com/your-username/portfolio' }],
+      links: [{ label: 'Source code', url: 'https://github.com/SpaceCarl9001/SpaceCarl9001.github.io' }],
     },
   ],
 
@@ -105,7 +105,7 @@ export default {
     message: 'Have a project, a role, or just want to say hi? My inbox is always open.',
     email: 'you@example.com',
     links: [
-      { label: 'GitHub', url: 'https://github.com/your-username' },
+      { label: 'GitHub', url: 'https://github.com/SpaceCarl9001' },
       { label: 'LinkedIn', url: 'https://www.linkedin.com/in/your-profile' },
     ],
   },
