@@ -58,9 +58,10 @@ export default {
       start: 'Feb 2025',
       end: 'Present',
       accent: '#38bdf8',
-      tags: ['Queue monitoring', 'Adherence', 'Intraday trends', 'SLA', 'Dashboards'],
+      tags: ['Queue management', 'Queue monitoring', 'Adherence', 'Intraday trends', 'SLA', 'Dashboards'],
       bullets: [
         'Monitor real-time queue performance, service levels and agent adherence, escalating deviations to maintain SLA compliance.',
+        'Manage queues by allocating resources based on staffing and volume per interval.',
         'Analyze intraday call volume and staffing trends to recommend schedule adjustments and prevent service level breaches.',
         'Partner with team leaders and operations managers to optimize agent utilization and real-time break/schedule planning.',
         'Build and maintain real-time and historical reporting dashboards in Excel/Google Sheets for leadership visibility.',
@@ -121,7 +122,7 @@ export default {
       category: 'Workforce Management',
       accent: '#38bdf8',
       summary: 'Real-time analysis that keeps service levels and adherence on target.',
-      items: ['Real-time queue monitoring', 'Schedule adherence', 'Intraday analysis', 'SLA management', 'Break & schedule planning', 'Real-time & historical reporting'],
+      items: ['Real-time queue monitoring', 'Queue management', 'Schedule adherence', 'Intraday analysis', 'SLA management', 'Break & schedule planning', 'Real-time & historical reporting'],
     },
     {
       category: 'Leadership & Support',

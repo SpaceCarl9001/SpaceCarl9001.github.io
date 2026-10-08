@@ -84,7 +84,9 @@ export function buildStops(c) {
 }
 
 export function cardHTML(stop) {
-  const out = [`<p class="card-kicker">${esc(stop.kicker)}</p>`, `<h2 class="card-title">${esc(stop.title)}</h2>`];
+  // Keep hyphenated words like "Real-Time" together instead of breaking after the hyphen.
+  const title = esc(stop.title).replace(/\S+-\S+/g, (w) => `<span class="nowrap">${w}</span>`);
+  const out = [`<p class="card-kicker">${esc(stop.kicker)}</p>`, `<h2 class="card-title">${title}</h2>`];
   if (stop.subtitle) out.push(`<p class="card-sub">${esc(stop.subtitle)}</p>`);
   (stop.body || []).forEach((p) => out.push(`<p class="card-text">${esc(p)}</p>`));
   if (stop.facts?.length) {
