@@ -55,7 +55,12 @@ export function buildStops(c) {
     });
   }
 
-  skills.forEach((s, i) => stops.push({
+  skills.forEach((s, i) => stops.push(s.featured ? {
+    group: 'Skills', kind: 'billboard', variant: 'signature', accent: s.accent || '#a3e635',
+    kicker: `★ Signature skill · ${i + 1} of ${skills.length}`, number: i + 1,
+    title: s.category, signTitle: s.shortTitle || s.category, summary: s.summary,
+    body: [s.summary], groups: s.groups, bullets: s.highlights, bulletsLabel: 'Proof on the road ahead',
+  } : {
     group: 'Skills', kind: 'billboard', variant: 'skill', accent: s.accent || '#38bdf8',
     kicker: `Skills · ${i + 1} of ${skills.length}`, number: i + 1,
     title: s.category, summary: s.summary, body: [s.summary], chips: s.items,
@@ -84,6 +89,14 @@ export function cardHTML(stop) {
   if (stop.facts?.length) {
     out.push(`<dl class="facts">${stop.facts.map((f) => `<div><dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd></div>`).join('')}</dl>`);
   }
+  if (stop.groups?.length) {
+    out.push(`<div class="card-groups">${stop.groups.map((g) => `
+      <div class="card-group">
+        <p class="card-label">${esc(g.label)}</p>
+        <ul class="chips">${g.items.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
+      </div>`).join('')}</div>`);
+  }
+  if (stop.bulletsLabel && stop.bullets?.length) out.push(`<p class="card-label">${esc(stop.bulletsLabel)}</p>`);
   if (stop.bullets?.length) out.push(`<ul class="card-bullets">${stop.bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`);
   if (stop.timeline?.length) {
     out.push(`<ol class="card-timeline">${stop.timeline.map((j) => `
@@ -216,7 +229,16 @@ export function renderStatic(c, el) {
     <section class="s-section" aria-labelledby="s-skills">
       <h2 id="s-skills">Skills</h2>
       <div class="s-grid">
-        ${skills.map((s) => `
+        ${[...skills].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)).map((s) => s.featured ? `
+          <article class="s-card s-card-featured" style="--accent:${esc(s.accent || '#a3e635')}">
+            <p class="s-meta">★ Signature skill</p>
+            <h3>${esc(s.category)}</h3>
+            <p>${esc(s.summary)}</p>
+            <dl class="s-groups">${(s.groups || []).map((g) => `
+              <div><dt>${esc(g.label)}</dt><dd><ul class="s-tags">${g.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></dd></div>`).join('')}
+            </dl>
+            ${s.highlights?.length ? `<ul class="s-highlights">${s.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul>` : ''}
+          </article>` : `
           <article class="s-card" style="--accent:${esc(s.accent || '#38bdf8')}">
             <h3>${esc(s.category)}</h3>
             <p>${esc(s.summary)}</p>

@@ -242,6 +242,10 @@ a { color: inherit; }
 }
 .card[data-side="right"] { left: auto; right: 28px; transform: translate(14px, -62%); }
 .card.show { opacity: 1; transform: translate(0, -62%); pointer-events: auto; }
+.card.more {
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 56px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 56px), transparent);
+}
 .card::before {
   content: '';
   position: absolute;
@@ -359,6 +363,25 @@ a { color: inherit; }
   .card:has(.card-timeline) { top: 84px; transform: translate(-14px, 0); max-height: calc(100vh - var(--dash-h) - 100px); }
   .card[data-side="right"]:has(.card-timeline) { transform: translate(14px, 0); }
   .card.show:has(.card-timeline) { transform: translate(0, 0); }
+}
+
+.card-groups { display: grid; gap: 8px; margin-top: 14px; }
+.card-group { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: start; }
+.card-group .card-label { margin: 6px 0 0; font-size: 10px; line-height: 1.3; }
+.card-group .chips { margin: 0; }
+.card-group .chips { gap: 5px; }
+.card-group .chips li { font-size: 12.5px; padding: 4px 10px; }
+/* the signature skill card glows in its accent colour */
+.card:has(.card-groups) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 48px color-mix(in srgb, var(--accent) 28%, transparent), 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.card:has(.card-groups) .card-kicker { color: var(--accent); }
+.card:has(.card-groups) .card-title { font-size: 28px; }
+@media (min-width: 761px) {
+  .card:has(.card-groups) { top: 84px; transform: translate(-14px, 0); max-height: calc(100vh - var(--dash-h) - 100px); width: min(440px, 38vw); }
+  .card[data-side="right"]:has(.card-groups) { transform: translate(14px, 0); }
+  .card.show:has(.card-groups) { transform: translate(0, 0); }
 }
 
 .card-edu { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
@@ -647,6 +670,22 @@ body.text-mode .static {
 }
 .s-link:hover { border-color: var(--page-muted); }
 .s-link-primary { background: var(--page-text); color: var(--page-bg); border-color: transparent; }
+
+.s-card-featured {
+  grid-column: 1 / -1;
+  border: 2px solid var(--accent);
+  border-top-width: 6px;
+  box-shadow: 0 10px 40px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.s-card-featured h3 { font-size: 26px; }
+.s-groups { display: grid; gap: 12px; margin: 16px 0 0; }
+.s-groups > div { display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: start; }
+.s-groups dt { font: 700 12px var(--font-sign); letter-spacing: 0.12em; text-transform: uppercase; color: var(--page-muted); padding-top: 6px; }
+.s-groups dd { margin: 0; }
+.s-groups .s-tags { margin: 0; }
+.s-highlights { margin: 18px 0 0; padding-left: 20px; }
+.s-highlights li + li { margin-top: 4px; }
+@media (max-width: 560px) { .s-groups > div { grid-template-columns: 1fr; gap: 4px; } }
 
 .s-jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
 .s-job { padding-left: 18px; border-left: 3px solid var(--accent); }

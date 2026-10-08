@@ -15,8 +15,8 @@ export default {
   profile: {
     name: 'Carl Flores',
     initials: 'CF',
-    role: 'Workforce Real-Time Analyst · Automation & Web Apps',
-    tagline: '9+ years in contact centers, from the phones to team lead to real-time analyst. I keep operations on target and build tools that take busywork off my team.',
+    role: 'Workforce Real-Time Analyst · AI-Assisted Web Developer',
+    tagline: '9+ years in contact centers, from the phones to team lead to real-time analyst. I keep operations on target, and I build the web apps and automations that take busywork off my team.',
   },
 
   about: {
@@ -130,16 +130,30 @@ export default {
       items: ['Team leadership', 'Coaching & feedback', 'AHT · CSAT · FCR', 'Escalation handling', 'Technical troubleshooting', 'Clear written & verbal English'],
     },
     {
-      category: 'Automation & Web Apps',
-      accent: '#a3e635',
-      summary: 'Turning repetitive manual steps into one click.',
-      items: ['Advanced Excel & Google Sheets', 'AI-assisted workflows', 'Process automation', 'Web apps', 'Dashboards'],
-    },
-    {
       category: 'Tools & Platforms',
       accent: '#a78bfa',
-      summary: 'The platforms I work in every day.',
+      summary: 'The WFM and support platforms I work in every day.',
       items: ['Assembled', 'Five9', 'Zendesk', 'Intercom', 'Zoho', 'Shopify', 'Jira', 'Asana', 'Slack'],
+    },
+    {
+      // `featured` = the signature skill: a bigger, neon-framed billboard with grouped tools.
+      featured: true,
+      category: 'AI-Assisted Web Development & Automation',
+      shortTitle: 'AI-Assisted Web Dev & Automation',
+      accent: '#a3e635',
+      summary: 'I build and ship web apps and automations end to end, from the database to deployment, with AI as my pair programmer.',
+      groups: [
+        { label: 'Languages', items: ['JavaScript', 'Python', 'SQL', 'HTML & CSS'] },
+        { label: 'Frameworks', items: ['Next.js', 'Node.js'] },
+        { label: 'Build & ship', items: ['Supabase', 'Vercel', 'GitHub', 'VS Code'] },
+        { label: 'AI-assisted dev', items: ['Claude / Claude Code', 'GitHub Copilot'] },
+        { label: 'Automation', items: ['Google Apps Script', 'Advanced Excel & Google Sheets', 'Process automation'] },
+      ],
+      highlights: [
+        'Built a live shift bidding web app that assigns schedules by agent rank and auto-generates full-coverage schedules for team leaders.',
+        'Automated attendance notifications end to end, from Slack to Google Sheets to Assembled, with zero clicks.',
+        'Built and shipped this 3D portfolio with AI-assisted development.',
+      ],
     },
   ],
 
@@ -179,7 +193,7 @@ export default {
       tagline: 'This site: a scroll-driven 3D drive through my work.',
       description:
         'A Three.js scene where scrolling drives a car from the countryside, through a forest and along the coast to a city at night. Every sign is drawn at runtime from a single content file.',
-      tags: ['Three.js', 'WebGL', 'Shaders'],
+      tags: ['Three.js', 'JavaScript', 'WebGL', 'Claude Code'],
       links: [{ label: 'Source code', url: 'https://github.com/SpaceCarl9001/SpaceCarl9001.github.io' }],
     },
   ],

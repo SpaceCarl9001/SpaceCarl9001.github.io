@@ -8,9 +8,19 @@ function shadowed(mesh) {
   return mesh;
 }
 
-function makeBillboard(panelMat, mats) {
+function makeBillboard(panelMat, mats, neon = null) {
   const g = new THREE.Group();
   const W = 12, H = 6.75, B = 3.4, cy = B + H / 2;
+  if (neon) {
+    // Glowing tube around the signature billboard (bright enough to bloom on high quality).
+    const tube = new THREE.MeshBasicMaterial({ color: new THREE.Color(neon).multiplyScalar(1.35), toneMapped: false });
+    const t = 0.16;
+    for (const [w, h, x, y] of [[W + 0.9, t, 0, cy + H / 2 + 0.36], [W + 0.9, t, 0, cy - H / 2 - 0.36], [t, H + 0.9, -W / 2 - 0.36, cy], [t, H + 0.9, W / 2 + 0.36, cy]]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), tube);
+      bar.position.set(x, y, 0.2);
+      g.add(bar);
+    }
+  }
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(W, H), panelMat);
   panel.position.set(0, cy, 0.17);
   const frame = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.5, H + 0.5, 0.3), mats.frame));
@@ -60,10 +70,15 @@ export function buildSigns({ scene, road, stops, photo, mats, texture, height })
   for (const s of stops) {
     road.frameAt(s.signDist, f);
     const panelMat = new THREE.MeshBasicMaterial({ map: texture(drawSign(s, photo)), toneMapped: false });
-    const { group, centerY } = s.kind === 'gantry' ? makeGantry(panelMat, mats) : makeBillboard(panelMat, mats);
+    const signature = s.variant === 'signature';
+    const built = s.kind === 'gantry' ? makeGantry(panelMat, mats) : makeBillboard(panelMat, mats, signature ? s.accent : null);
+    const { group } = built;
+    const scale = signature ? 1.3 : 1;
+    const centerY = built.centerY * scale;
+    group.scale.setScalar(scale);
     const toward = f.r.clone().multiplyScalar(-s.side); // from the sign toward the road
     const normal = f.t.clone().negate().addScaledVector(toward, s.side ? 0.45 : 0).normalize();
-    group.position.copy(f.p).addScaledVector(f.r, s.side * SIDE);
+    group.position.copy(f.p).addScaledVector(f.r, s.side * (SIDE + (signature ? 2.5 : 0)));
     if (s.side) group.position.y = Math.min(0, height(group.position.x, group.position.z));
     group.rotation.y = Math.atan2(normal.x, normal.z);
     scene.add(group);

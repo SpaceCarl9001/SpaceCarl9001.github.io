@@ -541,9 +541,75 @@ function drawEducation(ctx, w, h, s) {
   vignette(ctx, w, h, 0.3);
 }
 
+/** The signature skill: neon frame, badge, and tools grouped by category. */
+function drawSignature(ctx, w, h, s) {
+  const accent = s.accent;
+  ctx.fillStyle = '#070b10';
+  ctx.fillRect(0, 0, w, h);
+  for (const [x, y, c, r] of [[w - 120, 80, accent, 560], [80, h - 40, '#22d3ee', 520]]) {
+    const g = ctx.createRadialGradient(x, y, 10, x, y, r);
+    g.addColorStop(0, withAlpha(c, 0.26));
+    g.addColorStop(1, withAlpha(c, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 2;
+  for (let x = 0; x < w; x += 48) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  for (let y = 0; y < h; y += 48) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+  // neon frame
+  const frame = ctx.createLinearGradient(0, 0, w, h);
+  frame.addColorStop(0, accent);
+  frame.addColorStop(0.55, '#22d3ee');
+  frame.addColorStop(1, '#a78bfa');
+  ctx.save();
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 28;
+  ctx.strokeStyle = frame;
+  ctx.lineWidth = 10;
+  rr(ctx, 18, 18, w - 36, h - 36, 26);
+  ctx.stroke();
+  ctx.restore();
+
+  // badge
+  ctx.font = `800 26px ${F.sign}`;
+  spacing(ctx, 4);
+  const badge = '★ SIGNATURE SKILL';
+  const bw = ctx.measureText(badge).width + 44;
+  rr(ctx, 60, 52, bw, 50, 25);
+  ctx.fillStyle = accent;
+  ctx.fill();
+  ctx.fillStyle = '#071006';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(badge, 82, 79);
+  ctx.textBaseline = 'top';
+  spacing(ctx, 0);
+
+  ctx.fillStyle = '#ffffff';
+  const bottom = bigTitle(ctx, s.signTitle, 58, 124, 1150, 82);
+
+  const groups = (s.groups || []).slice(0, 5);
+  const top = bottom + 22;
+  const row = Math.min(84, (h - 40 - top) / Math.max(groups.length, 1));
+  groups.forEach((g, i) => {
+    const y = top + i * row;
+    ctx.fillStyle = accent;
+    ctx.font = `700 22px ${F.sign}`;
+    spacing(ctx, 3);
+    ctx.fillText(g.label.toUpperCase(), 62, y + 13);
+    spacing(ctx, 0);
+    chips(ctx, g.items, 330, y, w - 330 - 50, {
+      size: 27, h: 50, padX: 18, gap: 10, maxRows: 1,
+      fill: withAlpha(accent, 0.1), stroke: withAlpha(accent, 0.75), color: '#ffffff',
+    });
+  });
+  vignette(ctx, w, h, 0.25);
+}
+
 const DRAW = {
   start: drawStart, end: drawEnd, about: drawAbout, skill: drawSkill, project: drawProject,
-  job: drawJob, timeline: drawTimeline, education: drawEducation,
+  job: drawJob, timeline: drawTimeline, education: drawEducation, signature: drawSignature,
 };
 
 export function drawSign(stop, photo) {

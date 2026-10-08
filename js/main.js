@@ -273,9 +273,19 @@ function setCard(i) {
     hud.card.dataset.side = s.side === -1 ? 'right' : 'left';
     hud.card.style.setProperty('--accent', s.accent);
     hud.card.inert = false;
+    hud.card.scrollTop = 0;
     hud.card.classList.add('show');
+    updateCardFade();
   }, wasShown ? 240 : 0);
 }
+
+/** Fades the bottom edge of a card while more of it is hidden below the fold. */
+function updateCardFade() {
+  const c = hud.card;
+  c.classList.toggle('more', c.scrollHeight - c.clientHeight - c.scrollTop > 6);
+}
+hud.card.addEventListener('scroll', updateCardFade, { passive: true });
+addEventListener('resize', updateCardFade);
 
 function setText(key, el, value) {
   if (hudCache[key] === value) return;
