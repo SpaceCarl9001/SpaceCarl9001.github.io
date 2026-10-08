@@ -189,7 +189,10 @@ export default {
         'Replaced manual bidding through Google Forms and Google Sheets with a live web app that automatically assigns each agent a schedule shell based on their current rank. Its Smart Schedule feature auto-generates the best schedule for team leaders so the team covers all hours of operation (HOOP), and assigns agents evenly across leaders based on how many hours they overlap.',
       tags: ['Web app', 'Rank-based assignment', 'Schedule optimization', 'HOOP coverage'],
       stack: ['JavaScript', 'HTML & CSS', 'Node.js', 'Supabase (Postgres + Auth)', 'Vercel', 'GitHub', 'VS Code', 'Claude Code'],
-      links: [],
+      links: [
+        { label: 'Live demo', url: 'https://spacecarl9001.github.io/shift-bidding-demo/' },
+        { label: 'Source code', url: 'https://github.com/SpaceCarl9001/shift-bidding-demo' },
+      ],
     },
     {
       title: 'Road Trip Portfolio',
