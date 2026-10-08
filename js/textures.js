@@ -400,7 +400,19 @@ function drawProject(ctx, w, h, s) {
   ctx.fillStyle = '#45454a';
   ctx.font = `400 42px ${F.body}`;
   const y = wrap(ctx, s.summary, 92, titleBottom + 24, 960, 58, titleBottom > 260 ? 2 : 3);
-  chips(ctx, s.chips, 92, y + 30, 960, { fill: withAlpha(accent, 0.16), color: '#141414', maxRows: 2 });
+  let chipY = y + 30;
+  if (s.stack?.length) {
+    ctx.fillStyle = '#7a7a82';
+    ctx.font = `700 24px ${F.sign}`;
+    spacing(ctx, 4);
+    ctx.fillText('BUILT WITH', 92, y + 26);
+    spacing(ctx, 0);
+    chipY = y + 62;
+  }
+  chips(ctx, s.signChips || s.chips, 92, chipY, 1000, {
+    size: 32, h: 58, padX: 20, gap: 12,
+    fill: withAlpha(accent, 0.16), stroke: s.stack?.length ? withAlpha(accent, 0.6) : null, color: '#141414', maxRows: 2,
+  });
   vignette(ctx, w, h, 0.18);
 }
 

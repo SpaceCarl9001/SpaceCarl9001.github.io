@@ -145,13 +145,14 @@ export default {
       groups: [
         { label: 'Languages', items: ['JavaScript', 'Python', 'SQL', 'HTML & CSS'] },
         { label: 'Frameworks', items: ['Next.js', 'Node.js'] },
-        { label: 'Build & ship', items: ['Supabase', 'Vercel', 'GitHub', 'VS Code'] },
+        { label: 'Build & ship', items: ['Supabase (Postgres + Auth)', 'Vercel', 'GitHub', 'VS Code'] },
         { label: 'AI-assisted dev', items: ['Claude / Claude Code', 'GitHub Copilot'] },
-        { label: 'Automation', items: ['Google Apps Script', 'Advanced Excel & Google Sheets', 'Process automation'] },
+        { label: 'Automation', items: ['Google Apps Script', 'Slack webhooks', 'REST APIs', 'Advanced Excel & Google Sheets'] },
       ],
       highlights: [
-        'Built a live shift bidding web app that assigns schedules by agent rank and auto-generates full-coverage schedules for team leaders.',
-        'Automated attendance notifications end to end, from Slack to Google Sheets to Assembled, with zero clicks.',
+        'Built and shipped a live shift bidding web app on Node.js, Supabase (Postgres + Auth) and Vercel that assigns schedules by agent rank and auto-generates full-coverage schedules.',
+        'Automated attendance notifications end to end with Apps Script, Slack webhooks and the Assembled API, with zero clicks.',
+        'Built a PTO capacity and shrinkage dashboard in Google Apps Script, JavaScript and HTML.',
         'Built and shipped this 3D portfolio with AI-assisted development.',
       ],
     },
@@ -166,6 +167,7 @@ export default {
       description:
         'Tracks planned and unplanned shrinkage, total overtime and daily absences across all LOBs in one place, so the team can see at a glance whether we are about to exceed the planned shrinkage threshold.',
       tags: ['Shrinkage', 'Overtime', 'Absence tracking', 'All LOBs'],
+      stack: ['Google Apps Script', 'JavaScript', 'HTML'],
       links: [],
     },
     {
@@ -175,6 +177,7 @@ export default {
       description:
         'Attendance notifications used to be coded and plotted by hand, from Slack into Google Sheets and then into Assembled. This automation takes over the whole chain, so it now happens with no clicks at all.',
       tags: ['Slack', 'Google Sheets', 'Assembled', 'Automation'],
+      stack: ['Google Apps Script', 'JavaScript', 'Slack webhooks', 'Assembled API'],
       links: [],
     },
     {
@@ -184,6 +187,7 @@ export default {
       description:
         'Replaced manual bidding through Google Forms and Google Sheets with a live web app that automatically assigns each agent a schedule shell based on their current rank. Its Smart Schedule feature auto-generates the best schedule for team leaders so the team covers all hours of operation (HOOP), and assigns agents evenly across leaders based on how many hours they overlap.',
       tags: ['Web app', 'Rank-based assignment', 'Schedule optimization', 'HOOP coverage'],
+      stack: ['JavaScript', 'HTML & CSS', 'Node.js', 'Supabase (Postgres + Auth)', 'Vercel', 'GitHub', 'VS Code', 'Claude Code'],
       links: [],
     },
     {
@@ -193,7 +197,8 @@ export default {
       tagline: 'This site: a scroll-driven 3D drive through my work.',
       description:
         'A Three.js scene where scrolling drives a car from the countryside, through a forest and along the coast to a city at night. Every sign is drawn at runtime from a single content file.',
-      tags: ['Three.js', 'JavaScript', 'WebGL', 'Claude Code'],
+      tags: ['3D', 'Scroll-driven', 'Day-to-night'],
+      stack: ['JavaScript', 'Three.js', 'WebGL', 'HTML & CSS', 'GitHub Pages', 'Claude Code'],
       links: [{ label: 'Source code', url: 'https://github.com/SpaceCarl9001/SpaceCarl9001.github.io' }],
     },
   ],

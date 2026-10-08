@@ -369,6 +369,17 @@ a { color: inherit; }
 .card-group { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: start; }
 .card-group .card-label { margin: 6px 0 0; font-size: 10px; line-height: 1.3; }
 .card-group .chips { margin: 0; }
+.chips-stack { margin-top: 8px; }
+.chips-stack li {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.22);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+}
+.s-built { margin-top: 14px; font-size: 11px; }
+.s-stack { margin-top: 6px; }
+.s-stack li { background: transparent; border: 1px solid var(--page-line); font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 12px; }
+
 .card-group .chips { gap: 5px; }
 .card-group .chips li { font-size: 12.5px; padding: 4px 10px; }
 /* the signature skill card glows in its accent colour */
