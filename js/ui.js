@@ -6,9 +6,12 @@ export const esc = (value = '') =>
 
 const isExternal = (url) => /^https?:\/\//i.test(url);
 
-function linkHTML({ label, url }, className = 'btn') {
+/** A project link whose label says "demo" can open in the in-car monitor. */
+export const isDemoLink = (l) => /demo/i.test(l?.label || '') && isExternal(l.url);
+
+function linkHTML({ label, url }, className = 'btn', attrs = '') {
   const ext = isExternal(url) ? ' target="_blank" rel="noopener"' : '';
-  return `<a class="${className}" href="${esc(url)}"${ext}>${esc(label)}${isExternal(url) ? ' <span aria-hidden="true">↗</span>' : ''}</a>`;
+  return `<a class="${className}" href="${esc(url)}"${ext}${attrs}>${esc(label)}${isExternal(url) ? ' <span aria-hidden="true">↗</span>' : ''}</a>`;
 }
 
 /** One stop = one sign on the road + one info card. */
@@ -123,7 +126,7 @@ export function cardHTML(stop) {
 
   const links = [];
   if (stop.email) links.push(linkHTML({ label: stop.email, url: `mailto:${stop.email}` }, 'btn btn-primary'));
-  (stop.links || []).forEach((l) => links.push(linkHTML(l)));
+  (stop.links || []).forEach((l) => links.push(isDemoLink(l) ? linkHTML(l, 'btn btn-demo', ' data-demo') : linkHTML(l)));
   if (links.length) out.push(`<div class="card-links">${links.join('')}</div>`);
 
   if (stop.hint) {

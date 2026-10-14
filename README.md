@@ -57,10 +57,15 @@ To add a résumé, put the PDF in an `assets/` folder and add
 
 ## Graphics quality
 
-Desktops get **high** quality (live shadows and glow/bloom on lights, the sun and the water). Phones
-get **low** quality (no shadows or bloom, lighter terrain). If a desktop struggles during the first
-seconds of driving, the site drops to low by itself. To force a setting, add `?quality=high` or
-`?quality=low` to the URL. `?stop=5` starts the car at a given stop (0 = start line).
+| Tier | What you get |
+|---|---|
+| **high** (desktops) | Physically based materials that reflect the sky, live shadows, a sea that mirrors the scene, ambient occlusion (soft contact shadows), bloom, roadside grass, swaying trees, colour grading and speed blur |
+| **medium** | The same, minus the sea mirror and ambient occlusion |
+| **low** (phones) | Simple materials, no shadows or post-processing, lighter terrain |
+
+Desktops start on high. If driving runs below about 30 fps, the site steps down one tier at a time
+by itself. To force a tier, add `?quality=high`, `?quality=medium` or `?quality=low` to the URL.
+`?stop=5` starts the car at a given stop (0 = start line).
 
 ## Deploy
 
@@ -76,13 +81,16 @@ It's a static site, so any static host works:
 index.html        page shell: top bar, info card, cockpit (wheel, gauges, nav screen)
 css/style.css     all styling, including the text version and mobile layout
 js/content.js     ← your content
-js/main.js        scroll → camera, dashboard, quality settings, render loop
+js/main.js        scroll → camera, dashboard, quality settings, live rearview mirror, render loop
+js/cockpit.js     the car interior: windshield frame, dashboard and steering wheel (left-hand drive)
 js/world/         the 3D world:
   road.js           the winding road and "where is the road near this point?" lookups
   terrain.js        scene zones, hills / beach / island heightmap, the water shader
   sky.js            sky dome with clouds, sun, moon, stars, mountains; time-of-day colours
   scenery.js        trees, palms, rocks, farm, turbines, lighthouse, boats, city, street lights
   signs.js          billboards and highway gantries
+  materials.js      realistic (PBR) vs. lightweight materials, and the wind sway for foliage
+  post.js           the final camera pass: colour grade, vignette, grain and speed blur
 js/textures.js    signs, billboards, road, fields and building facades drawn with Canvas 2D
 js/ui.js          info cards, route bar, speedometer, text version
 serve.js          tiny local server for `npm start`

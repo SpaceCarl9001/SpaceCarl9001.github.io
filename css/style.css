@@ -467,6 +467,69 @@ a { color: inherit; }
 }
 
 /* ───────────────────────── cockpit ───────────────────────── */
+/* Left-hand drive: the wheel sits left of centre, the car's centre line (mirror, console) right of it.
+   --cabin / --cabin-warm are set from the time of day so the interior catches the light. */
+:root {
+  --wheel-x: 36%;
+  --car-x: 62%;
+  --cabin: 1;
+  --cabin-warm: 0;
+}
+.cabin {
+  filter: brightness(var(--cabin)) sepia(calc(var(--cabin-warm) * 0.32)) saturate(calc(1 + var(--cabin-warm) * 0.4));
+}
+
+.windshield-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.windshield { display: block; width: 100%; height: 100%; }
+.windshield .glass-glare { opacity: 0.035; }
+.windshield .glass-glare.thin { opacity: 0.025; }
+.windshield .visor { fill: #2f3238; }
+.windshield .trim-line { stroke: rgba(255, 255, 255, 0.07); stroke-width: 2; }
+.windshield .pillar-edge { stroke: rgba(255, 255, 255, 0.09); stroke-width: 2; }
+
+.mirror {
+  position: fixed;
+  z-index: 5;
+  left: var(--car-x);
+  top: 0;
+  width: clamp(130px, 12vw, 200px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.mirror-stem {
+  display: block;
+  width: 12px;
+  height: clamp(64px, 8vh, 76px); /* hangs just below the route bar */
+  margin: 0 auto -6px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, #121317, #2a2d33 60%, #15161a);
+}
+.mirror-housing {
+  /* only a frame: the middle stays see-through so the live view in the canvas shows */
+  display: block;
+  aspect-ratio: 10 / 3;
+  border: 6px solid #1c1e22;
+  border-top-color: #2b2e34;
+  border-radius: 18px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+.mirror-glass {
+  display: block;
+  height: 100%;
+  border-radius: 12px;
+  /* transparent: the live rear view is drawn into the 3D canvas right behind this hole */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), inset 0 5px 12px rgba(255, 255, 255, 0.07);
+}
+/* phones / low quality: no live view, just a glassy sky-and-road gradient */
+.mirror.static .mirror-glass {
+  background: linear-gradient(#7d8fae 0%, #b9c3d3 46%, #3b3d42 54%, #24252a 100%);
+}
+
 .cockpit {
   position: fixed;
   left: 0;
@@ -476,18 +539,29 @@ a { color: inherit; }
   z-index: 10;
   pointer-events: none;
 }
-.dash {
+.dash-wrap {
   position: absolute;
   left: 0;
   bottom: 0;
   width: 100%;
   height: var(--dash-h);
-  filter: drop-shadow(0 -4px 16px rgba(0, 0, 0, 0.35));
 }
+.dash { display: block; width: 100%; height: 100%; filter: drop-shadow(0 -4px 16px rgba(0, 0, 0, 0.35)); }
+.dash .wipers path { fill: none; stroke: #0b0c0e; stroke-width: 5; stroke-linecap: round; }
+.dash .dash-rim { stroke: rgba(255, 255, 255, 0.16); stroke-width: 2; }
+.dash .dash-seam { stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.dash .defrost rect { fill: #060708; opacity: 0.85; }
+.dash .vent rect { fill: url(#ventFill); stroke: #2e3138; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.dash .vent line { stroke: #2b2e35; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.dash .stack { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.dash .hazard rect { fill: #1d1f24; stroke: #33363d; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.dash .hazard path { fill: #d63a2f; }
+.dash .glovebox { fill: rgba(255, 255, 255, 0.015); stroke: rgba(255, 255, 255, 0.07); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.dash .glovebox-handle { fill: #22252b; }
 
 .cluster {
   position: absolute;
-  left: 50%;
+  left: var(--wheel-x);
   bottom: calc(var(--S) * 0.16);
   width: calc(var(--S) * 0.52);
   margin-left: calc(var(--S) * -0.26);
@@ -506,35 +580,59 @@ a { color: inherit; }
 .cluster .side-value { fill: #9fe7ff; font: 700 20px var(--font-sign); text-anchor: middle; }
 .cluster .gear { fill: #7dffb0; }
 
-.wheel {
+.wheel-wrap {
   position: absolute;
-  left: 50%;
+  left: var(--wheel-x);
   bottom: calc(var(--S) * -0.47);
   width: var(--S);
   height: var(--S);
   margin-left: calc(var(--S) * -0.5);
+}
+.wheel {
+  display: block;
+  width: 100%;
+  height: 100%;
   filter: drop-shadow(0 -6px 18px rgba(0, 0, 0, 0.55));
   will-change: transform;
 }
+.wheel .spoke { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; }
+.wheel .stitch { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1.3; stroke-dasharray: 4 5; }
+.wheel .rim-shine { stroke: rgba(255, 255, 255, 0.1); stroke-width: 3; stroke-linecap: round; }
+.wheel .marker { fill: #ff6a3d; }
+.wheel .buttons rect, .wheel .buttons circle { fill: #2a2d34; stroke: #3a3e46; stroke-width: 1.2; }
+.wheel .buttons .dot { fill: #3d424b; }
+.wheel .hub { stroke: rgba(255, 255, 255, 0.07); stroke-width: 2; }
+.wheel .badge { fill: none; stroke: rgba(255, 255, 255, 0.28); stroke-width: 2; }
 .wheel-logo {
   fill: #c9ced8;
-  font: 800 26px var(--font-sign);
+  font: 800 22px var(--font-sign);
   text-anchor: middle;
   letter-spacing: 0.04em;
 }
 
 .screen {
   position: absolute;
-  left: calc(50% + var(--S) * 0.6);
-  bottom: calc(var(--dash-h) * 0.22);
+  left: var(--car-x);
+  transform: translateX(-50%);
+  bottom: calc(var(--dash-h) * 0.1);
   width: clamp(190px, 17vw, 260px);
   padding: 11px 14px 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: linear-gradient(#070a10, #0b1019);
-  border: 1px solid #2a2f39;
+  border: 3px solid #0c0d10;
+  outline: 1px solid #2a2f39;
   box-shadow: inset 0 0 24px rgba(80, 160, 255, 0.08), 0 6px 20px rgba(0, 0, 0, 0.4);
   color: #cfe3ff;
   font-size: 12px;
+}
+.screen::after {
+  /* a little glare on the screen glass */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 40%);
+  pointer-events: none;
 }
 .screen-head {
   display: flex;
@@ -543,14 +641,140 @@ a { color: inherit; }
   letter-spacing: 0.16em;
   color: #6d9bd6;
 }
-.screen-now {
+.screen-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 6px;
+}
+.screen-now {
+  flex: 1;
+  min-width: 0;
   font: 700 16px var(--font-display);
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.screen-demo {
+  flex-shrink: 0;
+  pointer-events: auto; /* the cockpit ignores the mouse; this button doesn't */
+  cursor: pointer;
+  font: 800 11px var(--font-sign);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #04121c;
+  background: #7dd3fc;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 10px 4px;
+  box-shadow: 0 0 14px rgba(125, 211, 252, 0.5);
+  animation: demo-pulse 2.4s ease-in-out infinite;
+  transition: filter 0.2s, transform 0.2s;
+}
+.screen-demo:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.screen-demo:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@keyframes demo-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(125, 211, 252, 0.35); }
+  50% { box-shadow: 0 0 20px rgba(125, 211, 252, 0.75); }
+}
+
+/* ───────────────────────── demo monitor ───────────────────────── */
+.demo {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+}
+.demo[hidden] { display: none; }
+.demo-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.42);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.demo-monitor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, 82vw);
+  /* tall: most of the window, whatever the dashboard screen's proportions */
+  height: min(1100px, calc(100vh - 88px));
+  border: 10px solid #0c0d10;
+  border-radius: 18px;
+  background: #05070b;
+  outline: 1px solid #2a2f39;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65), inset 0 0 30px rgba(80, 160, 255, 0.06);
+  overflow: hidden;
+  transform-origin: 0 0;
+}
+.demo-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  background: linear-gradient(#0b1019, #070a10);
+  border-bottom: 1px solid #1d2430;
+  color: #cfe3ff;
+  font-size: 12px;
+}
+.demo-live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+  flex-shrink: 0;
+}
+.demo-title { font: 700 14px var(--font-display); color: #fff; white-space: nowrap; }
+.demo-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 12px ui-monospace, 'Cascadia Code', Consolas, monospace;
+  color: #6d9bd6;
+}
+.demo-action {
+  flex-shrink: 0;
+  font: 600 12.5px var(--font-body);
+  color: #e6efff;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.demo-action:hover { background: rgba(255, 255, 255, 0.13); }
+.demo-close { width: 32px; padding: 6px 0; text-align: center; font-size: 14px; }
+.demo-body { position: relative; flex: 1; background: #0b0e14; }
+.demo-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font: 700 13px var(--font-sign);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6d9bd6;
+}
+.demo-body iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.demo-body iframe.loaded { opacity: 1; }
+body.demo-open { overflow: hidden; }
 .screen-next {
   margin-top: 2px;
   color: #8fb3e0;
@@ -588,6 +812,8 @@ a { color: inherit; }
 body.text-mode { background: var(--page-bg); color: var(--page-text); }
 body.text-mode #scene,
 body.text-mode .cockpit,
+body.text-mode .windshield-wrap,
+body.text-mode .mirror,
 body.text-mode .card,
 body.text-mode .track,
 body.text-mode .route { display: none; }
@@ -715,7 +941,12 @@ body.text-mode .static {
 }
 
 @media (max-width: 760px) {
-  :root { --S: clamp(210px, min(66vw, 34vh), 300px); }
+  :root { --S: clamp(210px, min(66vw, 34vh), 300px); --wheel-x: 42%; }
+  .mirror { display: none; }
+  .demo-monitor { width: 94vw; height: calc(100vh - 56px); border-width: 6px; border-radius: 14px; }
+  .demo-url { display: none; }
+  /* a narrow screen sees less of the frame: push the pillars mostly off the edges */
+  .windshield { width: 108%; margin-left: -4%; }
 
   .topbar { gap: 12px; padding: 10px 16px 24px; }
   .brand-name { display: none; }

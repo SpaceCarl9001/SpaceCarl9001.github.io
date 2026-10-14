@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ROAD_HALF, ORIGIN, SEA_LEVEL } from './config.js';
 import { blocksSign } from './signs.js';
-import { mulberry32, drawRoadTexture, drawFieldTexture, drawFacadeTextures, drawBeamTexture } from '../textures.js';
+import { mulberry32, drawRoadTexture, drawRoadSurfaceMaps, drawFieldTexture, drawFacadeTextures, drawBeamTexture, drawGrassTuftTexture } from '../textures.js';
+import { lit, addWind, usesPBR } from './materials.js';
 
 const M = THREE.MathUtils;
 const TAU = Math.PI * 2;
@@ -67,9 +68,20 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
     const roadTex = texture(drawRoadTexture());
     roadTex.wrapT = THREE.RepeatWrapping;
     // Shoulder above ground, road above shoulder: fixed order + depth nudge, so no flicker.
-    const layer = (opts, offset) => new THREE.MeshLambertMaterial({ ...opts, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
-    const roadMesh = new THREE.Mesh(road.ribbon(ROAD_HALF, 0.05, 12, -ORIGIN + 10, road.end, 2), layer({ map: roadTex }, -4));
-    const shoulder = new THREE.Mesh(road.ribbon(ROAD_HALF + 2.3, 0.025, 12, -ORIGIN + 10, road.end, 3), layer({ color: 0xa0907a }, -2));
+    const layer = (opts, offset) => lit({ ...opts, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
+    // Surface detail (aggregate, cracks) and polished tyre tracks. Data maps stay linear.
+    const surface = drawRoadSurfaceMaps();
+    const dataMap = (canvas) => {
+      const t = new THREE.CanvasTexture(canvas);
+      t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = roadTex.anisotropy;
+      return t;
+    };
+    const roadMesh = new THREE.Mesh(
+      road.ribbon(ROAD_HALF, 0.05, 12, -ORIGIN + 10, road.end, 2),
+      layer({ map: roadTex, normalMap: dataMap(surface.normal), normalScale: new THREE.Vector2(0.3, 0.3), roughnessMap: dataMap(surface.rough), roughness: 1 }, -4),
+    );
+    const shoulder = new THREE.Mesh(road.ribbon(ROAD_HALF + 2.3, 0.025, 12, -ORIGIN + 10, road.end, 3), layer({ color: 0xa0907a, roughness: 1 }, -2));
     roadMesh.receiveShadow = shoulder.receiveShadow = true;
     shoulder.renderOrder = -0.4;
     roadMesh.renderOrder = -0.3;
@@ -130,12 +142,12 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
       const geo = mergeGeometries(buckets[kind]);
       geo.computeVertexNormals();
       const tex = texture(drawFieldTexture(kind), { repeat: true });
-      const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      const mesh = new THREE.Mesh(geo, lit({ map: tex, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       mesh.receiveShadow = true;
       scene.add(mesh);
     }
     const baleGeo = new THREE.CylinderGeometry(0.8, 0.8, 1.3, 14).rotateZ(Math.PI / 2).translate(0, 0.8, 0);
-    scene.add(instanced(baleGeo, new THREE.MeshLambertMaterial({ color: 0xd8b75e }), bales, (b) => {
+    scene.add(instanced(baleGeo, lit({ color: 0xd8b75e, roughness: 1 }), bales, (b) => {
       dummy.position.set(b.x, b.y, b.z);
       dummy.rotation.y = b.rot;
     }));
@@ -143,9 +155,9 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
     // red barn and silo
     const p = at(barn.d, barn.side, barn.off);
     const g = new THREE.Group();
-    const red = new THREE.MeshLambertMaterial({ color: 0xa8392b });
-    const trim = new THREE.MeshLambertMaterial({ color: 0xf1ede4 });
-    const roofMat = new THREE.MeshLambertMaterial({ color: 0x4d3a33 });
+    const red = lit({ color: 0xa8392b, roughness: 0.8 });
+    const trim = lit({ color: 0xf1ede4, roughness: 0.7 });
+    const roofMat = lit({ color: 0x5a4a44, roughness: 0.55, metalness: 0.45 });
     const body = new THREE.Mesh(new THREE.BoxGeometry(14, 7, 10), red);
     body.position.y = 3.5;
     const roof = new THREE.Mesh(new THREE.CylinderGeometry(7.4, 7.4, 14.6, 3, 1).rotateX(-Math.PI / 2).rotateY(Math.PI / 2).scale(1, 0.55, 1), roofMat);
@@ -157,9 +169,9 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
     doorX.rotation.z = Math.atan2(5, 4.5);
     const doorX2 = doorX.clone();
     doorX2.rotation.z *= -1;
-    const silo = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 13, 18), new THREE.MeshLambertMaterial({ color: 0xc9ccd1 }));
+    const silo = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 13, 18), lit({ color: 0xc9ccd1, roughness: 0.4, metalness: 0.65 }));
     silo.position.set(10, 6.5, -1);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(2.6, 18, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x9aa0a8 }));
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(2.6, 18, 8, 0, TAU, 0, Math.PI / 2), lit({ color: 0x9aa0a8, roughness: 0.35, metalness: 0.7 }));
     dome.position.set(10, 13, -1);
     g.add(body, roof, door, doorX, doorX2, silo, dome);
     g.traverse((o) => { o.castShadow = o.receiveShadow = true; });
@@ -180,7 +192,7 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
         prev[side] = p2;
       }
     }
-    const fenceMat = new THREE.MeshLambertMaterial({ color: 0xeee8dc });
+    const fenceMat = lit({ color: 0xeee8dc, roughness: 0.8 });
     scene.add(instanced(new THREE.BoxGeometry(0.16, 1.3, 0.16).translate(0, 0.55, 0), fenceMat, posts, (p2) => {
       dummy.position.set(p2.x, p2.y, p2.z);
     }));
@@ -193,7 +205,7 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
     }, false));
 
     // wind turbines turning on the hills
-    const towerMat = new THREE.MeshLambertMaterial({ color: 0xf2f3f5 });
+    const towerMat = lit({ color: 0xf2f3f5, roughness: 0.38, metalness: 0.1 });
     const turbineSpots = [[-60, 1, 150], [40, -1, 175], [150, 1, 210], [250, -1, 140], [330, 1, 175], [120, -1, 260]];
     for (const [d, side, off] of turbineSpots) {
       if (d > zones.forest + 120) continue;
@@ -267,8 +279,9 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
       new THREE.ConeGeometry(1.15, 2.6, 8).translate(0, 6.7, 0),
     ]);
     const trunkGeo = new THREE.CylinderGeometry(0.2, 0.32, 2.6, 6).translate(0, 1.3, 0);
-    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4a32 });
-    const leafMat = new THREE.MeshLambertMaterial({ flatShading: true });
+    const trunkMat = lit({ color: 0x6b4a32, roughness: 0.95 });
+    const leafMat = addWind(lit({ flatShading: true, roughness: 0.75 }), { strength: 0.14, from: 2, to: 8 });
+    const palmLeafMat = addWind(lit({ flatShading: true, roughness: 0.7 }), { strength: 0.3, from: 6, to: 11 });
     const pineTones = palette('#2f6b3a', '#3d7a38', '#356d33', '#47853c', '#2a5c31', '#3f7543');
     const leafTones = palette('#5d9b47', '#6aa84f', '#4f8a3d', '#79a948', '#86ad4a');
     const autumn = palette('#d39a3a', '#c7672e', '#e0b54a');
@@ -311,15 +324,15 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
       dummy.rotation.y = t.rot;
       dummy.scale.setScalar(t.s * 1.05);
     };
-    scene.add(instanced(palmTrunk, new THREE.MeshLambertMaterial({ color: 0x8c6d4c, flatShading: true }), palms, palmPlace));
-    scene.add(instanced(palmCrown, leafMat, palms, (t, i, m) => {
+    scene.add(instanced(palmTrunk, addWind(lit({ color: 0x8c6d4c, flatShading: true, roughness: 0.9 }), { strength: 0.12, from: 2, to: 9 }), palms, palmPlace));
+    scene.add(instanced(palmCrown, palmLeafMat, palms, (t, i, m) => {
       palmPlace(t);
       m.setColorAt(i, palmTones[Math.floor(t.c * palmTones.length)]);
     }));
 
     const rockGeo = lumpy(new THREE.DodecahedronGeometry(1.2, 0), 0.45, 9);
     const rockTones = palette('#8a8680', '#9b968d', '#77736d', '#a39d92');
-    scene.add(instanced(rockGeo, new THREE.MeshLambertMaterial({ flatShading: true }), rocks, (t, i, m) => {
+    scene.add(instanced(rockGeo, lit({ flatShading: true, roughness: 0.9 }), rocks, (t, i, m) => {
       dummy.position.set(t.x, t.y + 0.2, t.z);
       dummy.rotation.set(t.c * 3, t.rot, t.c * 2);
       dummy.scale.set(t.s * t.big * 1.4, t.s * t.big, t.s * t.big * 1.2);
@@ -327,12 +340,51 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
     }));
   }
 
+  /* ───────── roadside grass (desktop quality only) ───────── */
+  if (usesPBR()) {
+    const tufts = [];
+    const meadow = palette('#a4c96c', '#94bd5f', '#b3cf74', '#8fb457');
+    const woods = palette('#6e9a49', '#7aa452', '#5f8b40');
+    const dry = palette('#b9c27a', '#c6c483', '#a9b96c');
+    for (let d = -ORIGIN + 30; d < road.end - 10; d += 0.8) {
+      zones.at(d, zw);
+      for (const side of [-1, 1]) {
+        if (side < 0 && zw.coast > 0.4) continue; // sand and sea on that side
+        if (side > 0 && zw.city > 0.5) continue;
+        for (let k = 0; k < 3; k++) {
+          const off = ROAD_HALF + 2.6 + Math.pow(rand(), 1.4) * 24;
+          if (inField(d, side, off) || (side === barn.side && Math.abs(d - barn.d) < 26 && off > 30)) continue;
+          const p = at(d, side, off, (rand() - 0.5) * 0.8);
+          if (p.y < SEA_LEVEL + 0.5) continue;
+          const tones = zw.forest > 0.5 ? woods : zw.coast > 0.5 ? dry : meadow;
+          tufts.push({ x: p.x, y: p.y, z: p.z, s: 0.75 + rand() * 0.9, rot: rand() * TAU, color: tones[Math.floor(rand() * tones.length)] });
+        }
+      }
+    }
+    // three crossed cards; normals all point up so a tuft is lit like the ground under it
+    const cards = [0, 1, 2].map((i) => new THREE.PlaneGeometry(0.95, 0.75).translate(0, 0.36, 0).rotateY((i * Math.PI) / 3));
+    const tuftGeo = mergeGeometries(cards);
+    const nrm = tuftGeo.attributes.normal;
+    for (let i = 0; i < nrm.count; i++) nrm.setXYZ(i, 0, 1, 0);
+    const grassMat = addWind(lit({
+      map: texture(drawGrassTuftTexture()), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9,
+    }), { strength: 0.09, from: 0.05, to: 0.75 });
+    const grass = instanced(tuftGeo, grassMat, tufts, (t, i, m) => {
+      dummy.position.set(t.x, t.y - 0.05, t.z);
+      dummy.rotation.y = t.rot;
+      dummy.scale.set(t.s, t.s * (0.8 + (i % 5) * 0.1), t.s);
+      m.setColorAt(i, t.color);
+    }, false);
+    grass.layers.set(1); // kept out of the ambient-occlusion pass (its alpha cut-outs would read as solid cards)
+    scene.add(grass);
+  }
+
   /* ───────── coast: lighthouse and sailboats ───────── */
   if (island) {
     const g = new THREE.Group();
-    const white = new THREE.MeshLambertMaterial({ color: 0xf4f1ea });
-    const red = new THREE.MeshLambertMaterial({ color: 0xc23b2e });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x2b2f36 });
+    const white = lit({ color: 0xf4f1ea, roughness: 0.6 });
+    const red = lit({ color: 0xc23b2e, roughness: 0.55 });
+    const dark = lit({ color: 0x2b2f36, roughness: 0.45, metalness: 0.6 });
     const radiusAt = (y) => 2.3 - 0.8 * (y / 16);
     const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2.3, 16, 20).translate(0, 8, 0), white);
     g.add(tower);
@@ -373,9 +425,9 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
     animated.push((t) => { spin.rotation.y = t * 0.55; });
 
     // sailboats bobbing off the coast
-    const hullMat = new THREE.MeshLambertMaterial({ color: 0xf6f6f2 });
-    const stripeMat = new THREE.MeshLambertMaterial({ color: 0x1f4e8c });
-    const sailMat = new THREE.MeshLambertMaterial({ color: 0xfbfaf5, side: THREE.DoubleSide });
+    const hullMat = lit({ color: 0xf6f6f2, roughness: 0.3 });
+    const stripeMat = lit({ color: 0x1f4e8c, roughness: 0.4 });
+    const sailMat = lit({ color: 0xfbfaf5, roughness: 0.9, side: THREE.DoubleSide });
     const sail = (pts) => {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
@@ -411,9 +463,11 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
 
   /* ───────── harbour city ───────── */
   {
-    const { map, glow } = drawFacadeTextures();
+    const { map, glow, rough } = drawFacadeTextures();
     const facade = texture(map, { repeat: true });
     const lights = texture(glow, { repeat: true });
+    const glassy = new THREE.CanvasTexture(rough);
+    glassy.wrapS = glassy.wrapT = THREE.RepeatWrapping;
     const tints = palette('#efe9dd', '#c9d3dc', '#dcc8ad', '#b8c0ca', '#efe0cb', '#a6aeb8', '#d6dde0');
     const geos = [];
     const beacons = [];
@@ -453,7 +507,7 @@ export function buildScenery({ scene, road, zones, height, stops, island, textur
       }
     }
     if (geos.length) {
-      const cityMat = new THREE.MeshLambertMaterial({ map: facade, emissiveMap: lights, emissive: 0xffffff, emissiveIntensity: 0, vertexColors: true });
+      const cityMat = lit({ map: facade, emissiveMap: lights, emissive: 0xffffff, emissiveIntensity: 0, vertexColors: true, roughnessMap: glassy, roughness: 1, metalness: 0.05 });
       const city = new THREE.Mesh(mergeGeometries(geos), cityMat);
       city.castShadow = city.receiveShadow = true;
       scene.add(city);

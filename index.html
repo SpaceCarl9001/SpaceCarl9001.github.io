@@ -39,47 +39,47 @@
 
   <aside id="card" class="card" aria-live="polite" inert></aside>
 
+  <!-- windshield frame (A-pillars, roof, visors) and the rearview mirror, over the 3D view -->
+  <div id="windshield" class="cabin windshield-wrap" aria-hidden="true"></div>
+  <div class="mirror" aria-hidden="true">
+    <span class="mirror-stem"></span>
+    <span class="mirror-housing"><span id="mirrorGlass" class="mirror-glass"></span></span>
+  </div>
+
   <div class="cockpit" aria-hidden="true">
-    <svg class="dash" viewBox="0 0 1000 200" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="dashFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2b2e35"/>
-          <stop offset="0.22" stop-color="#17191e"/>
-          <stop offset="1" stop-color="#0a0b0d"/>
-        </linearGradient>
-      </defs>
-      <path d="M0,64 C180,34 340,24 500,24 C660,24 820,34 1000,64 L1000,200 L0,200 Z" fill="url(#dashFill)"/>
-      <path d="M0,64 C180,34 340,24 500,24 C660,24 820,34 1000,64" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="2" vector-effect="non-scaling-stroke"/>
-    </svg>
+    <div id="dash" class="cabin dash-wrap"></div>
 
     <div id="cluster" class="cluster"></div>
 
     <div class="screen">
       <div class="screen-head"><span>NAV</span><span id="clock">06:00</span></div>
-      <div id="navNow" class="screen-now">Start line</div>
+      <div class="screen-row">
+        <div id="navNow" class="screen-now">Start line</div>
+        <button id="demoBtn" class="screen-demo" type="button" hidden><span aria-hidden="true">▶</span> Demo</button>
+      </div>
       <div id="navNext" class="screen-next"></div>
       <div class="screen-bar"><span id="navBar"></span></div>
     </div>
 
-    <svg class="wheel" viewBox="-200 -200 400 400">
-      <defs>
-        <linearGradient id="rimShine" x1="0" y1="-1" x2="0" y2="1">
-          <stop offset="0" stop-color="#4a4e57"/>
-          <stop offset="0.5" stop-color="#1a1c21"/>
-          <stop offset="1" stop-color="#0d0e11"/>
-        </linearGradient>
-      </defs>
-      <circle r="170" fill="none" stroke="url(#rimShine)" stroke-width="32"/>
-      <circle r="170" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" transform="scale(1.08)"/>
-      <g stroke="#17191d" stroke-linecap="round">
-        <line x1="-160" y1="16" x2="-52" y2="8" stroke-width="34"/>
-        <line x1="160" y1="16" x2="52" y2="8" stroke-width="34"/>
-        <line x1="0" y1="44" x2="0" y2="160" stroke-width="40"/>
-      </g>
-      <circle r="60" fill="#1d2026" stroke="#2e323a" stroke-width="3"/>
-      <circle r="30" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
-      <text id="wheelLogo" class="wheel-logo" y="8"></text>
-    </svg>
+    <div id="wheel" class="cabin wheel-wrap"></div>
+  </div>
+
+  <!-- the dashboard screen, popped up into a big monitor that runs a project's live demo -->
+  <div id="demo" class="demo" hidden>
+    <div class="demo-backdrop" data-close></div>
+    <div class="demo-monitor" role="dialog" aria-modal="true" aria-labelledby="demoTitle">
+      <div class="demo-head">
+        <span class="demo-live" aria-hidden="true"></span>
+        <span id="demoTitle" class="demo-title">Live demo</span>
+        <span id="demoUrl" class="demo-url"></span>
+        <a id="demoOpen" class="demo-action" href="#" target="_blank" rel="noopener">Open in new tab <span aria-hidden="true">↗</span></a>
+        <button id="demoClose" class="demo-action demo-close" type="button" data-close aria-label="Close demo">✕</button>
+      </div>
+      <div class="demo-body">
+        <p class="demo-loading">Loading demo…</p>
+        <iframe id="demoFrame" title="Live demo" allow="clipboard-write; fullscreen"></iframe>
+      </div>
+    </div>
   </div>
 
   <div id="track" class="track" aria-hidden="true"></div>

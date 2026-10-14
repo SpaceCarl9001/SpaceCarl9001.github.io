@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ROAD_HALF, SEA_LEVEL } from './config.js';
 import { makeNoise } from './noise.js';
+import { lit } from './materials.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
 
 const M = THREE.MathUtils;
 const ss = (x, a, b) => M.smoothstep(x, a, b);
@@ -114,8 +116,9 @@ export function createTerrain({ road, zones, island, texture, detail = 1 }) {
 
   texture.repeat.set(W / 20, L / 20);
   const time = { value: 0 };
-  const material = new THREE.MeshLambertMaterial({ vertexColors: true, map: texture });
-  // Foam line where the waves lap the beach.
+  const material = lit({ vertexColors: true, map: texture, roughness: 0.95 });
+  // Foam where the waves lap the beach, and darker, glossy wet sand just above it.
+  const sea = SEA_LEVEL.toFixed(2);
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = time;
     shader.vertexShader = shader.vertexShader
@@ -124,10 +127,16 @@ export function createTerrain({ road, zones, island, texture, detail = 1 }) {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vWorldY;\nuniform float uTime;')
       .replace('#include <map_fragment>', `#include <map_fragment>
-        float waveLine = ${SEA_LEVEL.toFixed(2)} + 0.12 + 0.11 * sin(uTime * 1.25);
-        float foam = smoothstep(0.2, 0.0, abs(vWorldY - waveLine));
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.96, 0.97, 0.98), foam * 0.85);`);
+        float swash = 0.11 * sin(uTime * 1.25) + 0.04 * sin(uTime * 3.1 + vWorldY);
+        float waveLine = ${sea} + 0.12 + swash;
+        float foam = smoothstep(0.2, 0.0, abs(vWorldY - waveLine)) + 0.45 * smoothstep(0.12, 0.0, abs(vWorldY - waveLine + 0.22));
+        float wet = smoothstep(${sea} + 0.95, ${sea} + 0.1, vWorldY) * step(${sea} - 0.6, vWorldY);
+        diffuseColor.rgb *= 1.0 - wet * 0.32;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.96, 0.97, 0.98), clamp(foam, 0.0, 1.0) * 0.85);`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = mix(roughnessFactor, 0.28, wet);`);
   };
+  material.customProgramCacheKey = () => 'terrain-shore';
   const mesh = new THREE.Mesh(geo, material);
   mesh.receiveShadow = true;
   mesh.renderOrder = -0.5;
@@ -137,8 +146,14 @@ export function createTerrain({ road, zones, island, texture, detail = 1 }) {
 
 /* ───────────────────────── water ───────────────────────── */
 
-export function createWater() {
+/**
+ * The sea. With `reflect` (high quality) it mirrors the real scene: palms, lighthouse, billboards,
+ * city lights and the sun, rippled by the waves. Otherwise it reflects a simple sky gradient.
+ */
+export function createWater({ reflect = false } = {}) {
   const uniforms = {
+    tMirror: { value: null },
+    textureMatrix: { value: new THREE.Matrix4() },
     uTime: { value: 0 },
     uSunDir: { value: new THREE.Vector3(0, 1, 0) },
     uSunColor: { value: new THREE.Color() },
@@ -155,17 +170,23 @@ export function createWater() {
   const material = new THREE.ShaderMaterial({
     uniforms,
     transparent: true,
+    defines: reflect ? { REFLECT: '' } : {},
     vertexShader: /* glsl */ `
+      uniform mat4 textureMatrix;
       varying vec3 vWorld;
+      varying vec4 vMirror;
       void main() {
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vWorld = wp.xyz;
+        vMirror = textureMatrix * vec4(position, 1.0); // Reflector's matrix already includes modelMatrix
         gl_Position = projectionMatrix * viewMatrix * wp;
       }`,
     fragmentShader: /* glsl */ `
       uniform float uTime, uSunVis, uMoon, uFogNear, uFogFar;
       uniform vec3 uSunDir, uSunColor, uMoonDir, uSkyTop, uSkyBottom, uDeep, uFogColor;
+      uniform sampler2D tMirror;
       varying vec3 vWorld;
+      varying vec4 vMirror;
 
       void wave(inout vec2 g, vec2 p, vec2 dir, float freq, float amp, float speed) {
         dir = normalize(dir);
@@ -190,9 +211,18 @@ export function createWater() {
         vec3 R = reflect(-V, n);
         R.y = abs(R.y);
         vec3 sky = mix(uSkyBottom, uSkyTop, smoothstep(0.0, 0.6, R.y));
+        float glint = 9.0;
+        #ifdef REFLECT
+          // the real mirrored scene, rippled by the wave normal (less ripple far away)
+          vec2 ripple = vec2(n.x, n.z) * mix(0.012, 0.045, detail);
+          vec3 mirrored = texture2D(tMirror, vMirror.xy / vMirror.w + ripple).rgb;
+          sky = mirrored;
+          fres = 0.08 + 0.92 * pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 4.0);
+          glint = 4.0; // the mirror already carries the sun disc
+        #endif
 
         float s = max(dot(R, normalize(uSunDir)), 0.0);
-        float spec = (pow(s, 420.0) * 9.0 + pow(s, 36.0) * 0.22) * uSunVis;
+        float spec = (pow(s, 420.0) * glint + pow(s, 36.0) * 0.22) * uSunVis;
         float m = max(dot(R, normalize(uMoonDir)), 0.0);
         float moonSpec = (pow(m, 260.0) * 4.0 + pow(m, 30.0) * 0.12) * uMoon;
 
@@ -205,8 +235,33 @@ export function createWater() {
         #include <colorspace_fragment>
       }`,
   });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3200, 3200).rotateX(-Math.PI / 2), material);
+  let mesh, mirrorTarget = null;
+  if (reflect) {
+    // Reflector renders the mirrored scene each frame; we keep its texture and projection,
+    // and swap in our own wave shader.
+    mesh = new Reflector(new THREE.PlaneGeometry(3200, 3200), { textureWidth: 1024, textureHeight: 640, clipBias: 0.002, multisample: 0 });
+    const own = mesh.material.uniforms;
+    uniforms.tMirror.value = own.tDiffuse.value;
+    uniforms.textureMatrix = own.textureMatrix;
+    mesh.material.dispose();
+    mesh.material = material;
+    mirrorTarget = mesh.getRenderTarget();
+    // Skip the mirror while another pass (ambient occlusion normals) re-renders the scene.
+    const renderMirror = mesh.onBeforeRender;
+    mesh.onBeforeRender = function (renderer, scene, camera, ...rest) {
+      if (scene.overrideMaterial) return;
+      renderMirror.call(this, renderer, scene, camera, ...rest);
+    };
+  } else {
+    mesh = new THREE.Mesh(new THREE.PlaneGeometry(3200, 3200), material);
+  }
+  mesh.rotation.x = -Math.PI / 2;
   mesh.position.y = SEA_LEVEL;
   mesh.frustumCulled = false;
-  return { mesh, uniforms };
+  return {
+    mesh,
+    uniforms,
+    /** Mirror resolution follows the screen (half size is plenty under the ripples). */
+    setSize(w, h) { mirrorTarget?.setSize(Math.round(w * 0.5), Math.round(h * 0.5)); },
+  };
 }

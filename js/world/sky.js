@@ -50,26 +50,38 @@ export function createSky(mountainCanvas) {
 
         void main() {
           vec3 dir = normalize(vDir);
-          vec3 col = mix(bottom, top, smoothstep(-0.03, 0.5, dir.y));
+          float up = max(dir.y, 0.0);
           vec3 sd = normalize(sunDir);
           float s = max(dot(dir, sd), 0.0);
-          col += sunColor * (pow(s, 10.0) * glow + pow(s, 180.0) * 0.6);
+          float sunUp = smoothstep(-0.05, 0.25, sd.y);
+
+          // base gradient, a deeper zenith (Rayleigh) and a pale band of haze along the horizon
+          vec3 col = mix(bottom, top, smoothstep(-0.03, 0.5, dir.y));
+          col = mix(col, top * 0.82, smoothstep(0.45, 1.0, up) * 0.35);
+          vec3 haze = mix(bottom, mix(vec3(1.0), sunColor, 0.6), 0.25 + 0.45 * pow(s, 2.0));
+          col = mix(col, haze, exp(-up * 9.0) * 0.45);
+          // forward scattering around the sun (Mie): a wide soft glow plus a tight one
+          col += sunColor * (pow(s, 3.0) * 0.1 * glow + pow(s, 10.0) * glow + pow(s, 180.0) * 0.6);
           float disk = smoothstep(0.99935, 0.99965, s);
 
           float m = max(dot(dir, normalize(moonDir)), 0.0);
           col += vec3(0.55, 0.62, 0.85) * pow(m, 60.0) * 0.25 * moon;
           float moonDisk = smoothstep(0.99975, 0.9999, m) * moon;
 
-          // clouds: a noise layer projected onto a flat ceiling, drifting with time
+          // clouds: puffy cumulus with sunlit rims, plus thin, high cirrus streaks
           float cover = 0.0;
           vec3 cloud = vec3(0.0);
           if (dir.y > 0.0) {
             vec2 uv = dir.xz / (dir.y + 0.15) * 1.1 + vec2(uTime * 0.006, uTime * 0.0025);
             float c = fbm(uv);
-            float c2 = fbm(uv + sd.xz * 0.06);
-            cover = smoothstep(0.62 - cloudAmount * 0.16, 0.86, c) * smoothstep(0.0, 0.16, dir.y);
-            cloud = mix(cloudDark, cloudLit, clamp(0.55 + (c - c2) * 3.5, 0.0, 1.0));
-            cloud += sunColor * pow(s, 6.0) * 0.35;
+            float c2 = fbm(uv + sd.xz * 0.06);           // denser toward the sun = shaded side
+            float lit = clamp(0.55 + (c - c2) * 3.5, 0.0, 1.0);
+            float body = smoothstep(0.62 - cloudAmount * 0.16, 0.86, c);
+            float edge = body * (1.0 - smoothstep(0.66, 0.9, c));  // thin edges let light through
+            cloud = mix(cloudDark, cloudLit, lit);
+            cloud += sunColor * (pow(s, 6.0) * 0.35 + edge * pow(s, 3.0) * 0.9 * sunUp); // silver lining
+            float cirrus = smoothstep(0.55, 0.85, fbm(vec2(uv.x * 0.35, uv.y * 2.2) * 1.6 + 40.0)) * 0.35 * cloudAmount;
+            cover = max(body, cirrus) * smoothstep(0.0, 0.16, dir.y);
           }
           col = min(col, vec3(0.97)); // only the sun and moon discs are bright enough to bloom
           col = mix(col, sunColor * 4.0, disk * (1.0 - cover * 0.85));
@@ -173,7 +185,9 @@ export function createTimeOfDay({ scene, sky, water, hemi, sunLight, headlight, 
   const moonDir = dirFrom(-14, 13);
   const moonLight = new THREE.Color('#9fb3ff');
   const lightDir = new THREE.Vector3();
-  const out = { night: 0, lamps: 0, bloom: 0.5, lightDir, clock: '06:00' };
+  const out = { night: 0, lamps: 0, bloom: 0.5, lightDir, clock: '06:00', grade: new THREE.Vector3(1, 1, 1) };
+  const warmGrade = new THREE.Vector3(1.03, 1.0, 0.95);
+  const coolGrade = new THREE.Vector3(0.93, 0.98, 1.08);
 
   return function update(p) {
     let i = 0;
@@ -210,18 +224,20 @@ export function createTimeOfDay({ scene, sky, water, hemi, sunLight, headlight, 
     sunLight.color.copy(tod.sun).lerp(moonLight, night);
     sunLight.intensity = lerp('sunI');
 
-    const w = water.uniforms;
-    w.uSunDir.value.copy(u.sunDir.value);
-    w.uSunColor.value.copy(tod.sun);
-    w.uSunVis.value = M.smoothstep(u.sunDir.value.y, -0.02, 0.03);
-    w.uMoonDir.value.copy(moonDir);
-    w.uMoon.value = u.moon.value;
-    w.uSkyTop.value.copy(tod.top);
-    w.uSkyBottom.value.copy(tod.bottom);
-    w.uDeep.value.copy(tod.sea);
-    w.uFogColor.value.copy(tod.bottom);
-    w.uFogNear.value = scene.fog.near;
-    w.uFogFar.value = scene.fog.far;
+    for (const sea of [].concat(water)) {
+      const w = sea.uniforms;
+      w.uSunDir.value.copy(u.sunDir.value);
+      w.uSunColor.value.copy(tod.sun);
+      w.uSunVis.value = M.smoothstep(u.sunDir.value.y, -0.02, 0.03);
+      w.uMoonDir.value.copy(moonDir);
+      w.uMoon.value = u.moon.value;
+      w.uSkyTop.value.copy(tod.top);
+      w.uSkyBottom.value.copy(tod.bottom);
+      w.uDeep.value.copy(tod.sea);
+      w.uFogColor.value.copy(tod.bottom);
+      w.uFogNear.value = scene.fog.near;
+      w.uFogFar.value = scene.fog.far;
+    }
 
     const lamps = M.smoothstep(night, 0.12, 0.6);
     for (const [mat, max] of nightMaterials) mat.emissiveIntensity = lamps * max;
@@ -235,6 +251,10 @@ export function createTimeOfDay({ scene, sky, water, hemi, sunLight, headlight, 
     out.night = night;
     out.lamps = lamps;
     out.bloom = lerp('bloom');
+    // colour grade: warm through golden hour and sunset, cool blue at night
+    const golden = M.smoothstep(p, 0.45, 0.8) * (1 - M.smoothstep(night, 0.3, 0.9));
+    out.golden = golden;
+    out.grade.set(1, 1, 1).lerp(warmGrade, golden).lerp(coolGrade, M.smoothstep(night, 0.4, 1));
     return out;
   };
 }

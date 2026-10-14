@@ -3,8 +3,11 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import content from './content.js';
-import { buildStops, cardHTML, renderStatic, renderRoute, clusterSVG } from './ui.js';
+import { buildStops, cardHTML, renderStatic, renderRoute, clusterSVG, isDemoLink } from './ui.js';
+import { createDemoMonitor } from './demo.js';
+import { windshieldSVG, dashSVG, wheelSVG } from './cockpit.js';
 import { drawMountainTexture, drawGlowTexture, drawGroundDetailTexture, loadImage, loadFonts } from './textures.js';
 import { LANE, EYE, SPACING, SEA_LEVEL } from './world/config.js';
 import { createRoad } from './world/road.js';
@@ -12,6 +15,8 @@ import { createZones, createTerrain, createWater } from './world/terrain.js';
 import { createSky, createTimeOfDay } from './world/sky.js';
 import { buildSigns } from './world/signs.js';
 import { buildScenery } from './world/scenery.js';
+import { lit, setPBR, usesPBR, windTime } from './world/materials.js';
+import { createFinishPass } from './world/post.js';
 
 const M = THREE.MathUtils;
 const $ = (s) => document.querySelector(s);
@@ -43,6 +48,9 @@ const { profile } = content;
 document.title = `${profile.name} · ${profile.role}`;
 $('#brandBadge').textContent = profile.initials;
 $('#brandName').textContent = profile.name;
+$('#windshield').innerHTML = windshieldSVG();
+$('#dash').innerHTML = dashSVG();
+$('#wheel').innerHTML = wheelSVG();
 $('#wheelLogo').textContent = profile.initials;
 $('#cluster').innerHTML = clusterSVG();
 renderStatic(content, $('#static'));
@@ -60,6 +68,8 @@ const hud = {
   now: $('#navNow'),
   next: $('#navNext'),
   bar: $('#navBar'),
+  demoBtn: $('#demoBtn'),
+  screen: $('.screen'),
 };
 
 const toggle = $('#modeToggle');
@@ -80,9 +90,14 @@ function setTextMode(on) {
 toggle.addEventListener('click', () => setTextMode(!body.classList.contains('text-mode')));
 
 /* ───────────────────────── renderer + quality ───────────────────────── */
-// "high": shadows + bloom. "low": neither (phones, weak GPUs). Auto mode starts high on
-// desktops and steps down by itself if the frame rate suffers. Override with ?quality=low|high.
-const forced = ['low', 'high'].includes(params.get('quality')) ? params.get('quality') : null;
+// Quality tiers, best first:
+//   high   – PBR materials + sky reflections, shadows, sea mirror, ambient occlusion, bloom, grass
+//   medium – the same minus the sea mirror and ambient occlusion
+//   low    – simple materials, no shadows or post effects (phones)
+// Desktops start on high and step down one tier at a time if the frame rate suffers.
+// Override with ?quality=low|medium|high.
+const TIERS = ['low', 'medium', 'high'];
+const forced = TIERS.includes(params.get('quality')) ? params.get('quality') : null;
 const looksMobile = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700;
 let quality = forced || (looksMobile ? 'low' : 'high');
 
@@ -91,6 +106,7 @@ try {
   renderer = new THREE.WebGLRenderer({ canvas: $('#scene'), antialias: true, powerPreference: 'high-performance' });
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  setPBR(quality !== 'low');
 } catch (err) {
   console.warn('WebGL is not available, falling back to the text version.', err);
 }
@@ -126,10 +142,10 @@ camera.add(headlight, headlight.target);
 
 const glowTex = texture(drawGlowTexture());
 const mats = {
-  metal: new THREE.MeshLambertMaterial({ color: 0x6d737c }),
-  frame: new THREE.MeshLambertMaterial({ color: 0x2a2d33 }),
-  lamp: new THREE.MeshLambertMaterial({ color: 0x444444, emissive: 0xffd9a0, emissiveIntensity: 0 }),
-  post: new THREE.MeshLambertMaterial({ color: 0xf2f2ee }),
+  metal: lit({ color: 0x7d838c, roughness: 0.42, metalness: 0.75 }),
+  frame: lit({ color: 0x2a2d33, roughness: 0.5, metalness: 0.5 }),
+  lamp: lit({ color: 0x444444, emissive: 0xffd9a0, emissiveIntensity: 0, roughness: 0.4 }),
+  post: lit({ color: 0xf2f2ee, roughness: 0.6 }),
   reflector: new THREE.MeshBasicMaterial({ color: 0xff9b3d }),
   pool: new THREE.MeshBasicMaterial({
     map: glowTex, color: 0xffc98a, transparent: true, opacity: 0, depthWrite: false,
@@ -148,25 +164,67 @@ const island = (() => {
 })();
 
 const sky = createSky(drawMountainTexture());
-const water = createWater();
+// Two seas: a real mirror for high quality and a cheaper sky-reflection one for the rest.
+const plainWater = createWater();
+const mirrorWater = renderer && usesPBR() ? createWater({ reflect: true }) : null;
+const waters = [plainWater, mirrorWater].filter(Boolean);
 let terrain, timeOfDay, scenery;
-scene.add(sky.dome, sky.mountains, sky.stars, water.mesh);
+scene.add(sky.dome, sky.mountains, sky.stars, ...waters.map((w) => w.mesh));
 
-let composer = null, bloom = null;
+// Grass lives on layer 1 so the ambient-occlusion pass (which uses its own camera) skips it.
+camera.layers.enable(1);
+const aoCamera = new THREE.PerspectiveCamera();
+
+/* Reflections of the sky on every PBR surface: the sky dome is rendered into a blurred
+   environment map, refreshed as the time of day changes. */
+const pmrem = renderer && usesPBR() ? new THREE.PMREMGenerator(renderer) : null;
+const envScene = new THREE.Scene();
+envScene.add(new THREE.Mesh(sky.dome.geometry, sky.dome.material));
+let envTarget = null, envProgress = -1, envTime = -1e9;
+function updateEnvironment(p, now, force = false) {
+  if (!pmrem) return;
+  if (!force && (Math.abs(p - envProgress) < 0.008 || now - envTime < 300)) return;
+  envProgress = p;
+  envTime = now;
+  const next = pmrem.fromScene(envScene, 0, 1, 2000);
+  envTarget?.dispose();
+  envTarget = next;
+  scene.environment = next.texture;
+}
+
+let composer = null, bloom = null, ao = null, finish = null;
 function setupQuality() {
-  const high = quality === 'high';
-  renderer.shadowMap.enabled = high;
-  sunLight.castShadow = high;
+  const tier = TIERS.indexOf(quality);
+  const shadows = tier >= 1;
+  renderer.shadowMap.enabled = shadows;
+  sunLight.castShadow = shadows;
+  if (mirrorWater) mirrorWater.mesh.visible = tier >= 2;
+  plainWater.mesh.visible = !mirrorWater || tier < 2;
   scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
-  if (high && !composer) {
+
+  composer = null;
+  if (tier >= 1) {
     const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
     composer = new EffectComposer(renderer, rt);
     composer.addPass(new RenderPass(scene, camera));
+    ao = null;
+    if (tier >= 2) {
+      ao = new GTAOPass(scene, aoCamera, 1, 1, undefined,
+        { radius: 1.6, distanceExponent: 1.4, thickness: 1.4, scale: 1.1, samples: 12, distanceFallOff: 1, screenSpaceRadius: false },
+        { lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+      ao.blendIntensity = 0.85;
+      // AO is soft by nature: compute it at half resolution.
+      const fullSetSize = ao.setSize.bind(ao);
+      ao.setSize = (w, h) => fullSetSize(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
+      composer.addPass(ao);
+    }
     bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.55, 1.0);
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
+    finish = createFinishPass();
+    composer.addPass(finish);
   }
-  if (!high) composer = null;
+  setupMirror();
 }
 
 /* ───────────────────────── scroll → distance ───────────────────────── */
@@ -240,13 +298,14 @@ function scrollToStop(i, smooth = true) {
 
 function resize() {
   const w = innerWidth, h = innerHeight;
-  const ratio = Math.min(devicePixelRatio, quality === 'high' ? 1.5 : 1.75);
+  const ratio = Math.min(devicePixelRatio, quality === 'low' ? 1.75 : 1.5);
   renderer.setPixelRatio(ratio);
   renderer.setSize(w, h, false);
   if (composer) {
     composer.setPixelRatio(ratio);
     composer.setSize(w, h);
   }
+  for (const sea of waters) sea.setSize(w * ratio, h * ratio);
   const portrait = w / h < 0.85;
   // Render a taller frustum and show its lower part: lifts the horizon above the dashboard.
   const dash = document.querySelector('.dash')?.getBoundingClientRect().height || 0;
@@ -258,6 +317,26 @@ function resize() {
   glanceMax = portrait ? 0.72 : 0.22;
   dirty = true;
 }
+
+/* ───────── live demos: the dash screen's Demo button and the card's demo link open the monitor ───────── */
+const demo = createDemoMonitor({ reduceMotion, onOpenChange: (isOpen) => { if (isOpen) cancelDrive(); } });
+let demoStop = null;
+function setDemoStop(stop) {
+  if (stop === demoStop) return;
+  demoStop = stop;
+  hud.demoBtn.hidden = !(stop.links || []).some(isDemoLink);
+}
+hud.demoBtn.addEventListener('click', () => {
+  const link = demoStop?.links?.find(isDemoLink);
+  if (link) demo.show({ url: link.url, project: demoStop.title }, hud.screen);
+});
+hud.card.addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-demo]');
+  // plain left-clicks only: ctrl/cmd/shift-click still opens a new tab
+  if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || activeCard < 0) return;
+  e.preventDefault();
+  demo.show({ url: a.href, project: stops[activeCard].title }, a);
+});
 
 function setCard(i) {
   if (i === activeCard) return;
@@ -296,6 +375,8 @@ function setText(key, el, value) {
 const fA = road.frameAt(0), fB = road.frameAt(0), fC = road.frameAt(0);
 const look = new THREE.Vector3();
 const forward = new THREE.Vector3();
+const SEAT = -0.38; // the driver sits left of the car's centre line (left-hand drive)
+const cabinVars = { light: -1, warm: -1 };
 const zw = {};
 
 function update(now, dt) {
@@ -307,9 +388,9 @@ function update(now, dt) {
 
   // camera: sit in the right lane, look down the road, glance at signs as we pull up
   const bob = reduceMotion ? 0 : Math.sin(now * 0.017) * 0.018 * Math.min(speed / 40, 1);
-  camera.position.copy(fA.p).addScaledVector(fA.r, LANE);
+  camera.position.copy(fA.p).addScaledVector(fA.r, LANE + SEAT);
   camera.position.y = EYE + bob;
-  look.copy(fB.p).addScaledVector(fB.r, LANE * 0.85);
+  look.copy(fB.p).addScaledVector(fB.r, LANE * 0.85 + SEAT);
   look.y = EYE - 0.15;
   const idx = M.clamp(Math.round(dist / SPACING), 0, stops.length - 1);
   const near = stops[idx];
@@ -334,18 +415,42 @@ function update(now, dt) {
   sky.mountains.position.set(camera.position.x, 70, camera.position.z);
   sky.mountainUniforms.seaMask.value = zw.coast;
   sky.mountainUniforms.seaDir.value.set(-fA.r.x, -fA.r.z).normalize();
-  water.mesh.position.set(camera.position.x, SEA_LEVEL, camera.position.z);
+  for (const sea of waters) sea.mesh.position.set(camera.position.x, SEA_LEVEL, camera.position.z);
+  // only pay for the sea mirror once the coast is near enough to see
+  if (mirrorWater && quality === 'high') mirrorWater.mesh.visible = dist > zones.coast - 700;
   const env = timeOfDay(p);
+  if (usesPBR()) hemi.intensity *= 0.55; // the sky's environment light now provides much of the fill
+  updateEnvironment(p, now);
 
   forward.subVectors(look, camera.position).setY(0).normalize();
   sunLight.target.position.copy(camera.position).addScaledVector(forward, 32).setY(0);
   sunLight.position.copy(sunLight.target.position).addScaledVector(env.lightDir, 180);
 
   sky.uniforms.uTime.value = t;
-  water.uniforms.uTime.value = t;
+  for (const sea of waters) sea.uniforms.uTime.value = t;
   terrain.time.value = t;
+  windTime.value = t;
   scenery.update(t, env.lamps);
   if (bloom) bloom.strength = env.bloom;
+  // cabin lighting: the interior darkens at night and warms up through golden hour
+  const cabinLight = Math.round((1 - 0.66 * M.smoothstep(env.night, 0.15, 1)) * 100) / 100;
+  const cabinWarm = Math.round(env.golden * 100) / 100;
+  if (cabinLight !== cabinVars.light || cabinWarm !== cabinVars.warm) {
+    cabinVars.light = cabinLight;
+    cabinVars.warm = cabinWarm;
+    document.documentElement.style.setProperty('--cabin', cabinLight);
+    document.documentElement.style.setProperty('--cabin-warm', cabinWarm);
+  }
+  if (finish) {
+    const u = finish.uniforms;
+    u.uTime.value = t;
+    u.uBlur.value = reduceMotion ? 0 : Math.min(0.035, Math.max(0, speed - 25) / 9000);
+    u.uGrade.value.copy(env.grade);
+  }
+  if (ao) {
+    aoCamera.copy(camera, false);
+    aoCamera.layers.set(0);
+  }
 
   // dashboard
   // Realistic-ish for key driving (55 m/s ≈ 100 km/h); a hard scroll flick pegs the needle.
@@ -361,6 +466,7 @@ function update(now, dt) {
   const next = stops.find((s) => s.viewDist > dist + 20);
   const current = next ? stops[Math.max(0, next.index - 1)] : stops[stops.length - 1];
   setText('now', hud.now, current.group === 'Start' ? 'Start line' : current.title);
+  setDemoStop(current);
   setText('next', hud.next, next ? `Next: ${next.title} · ${Math.round(next.viewDist - dist)} m` : 'You have arrived');
   hud.bar.style.transform = `scaleX(${p.toFixed(4)})`;
 
@@ -368,6 +474,94 @@ function update(now, dt) {
   route.items.forEach((el) => el.classList.toggle('active', el.dataset.group === near.group));
 
   setCard(Math.abs(dist - near.viewDist) < SPACING * 0.36 ? idx : -1);
+}
+
+/* ───────── rearview mirror: a small live render of the road behind, flipped like a mirror ───────── */
+const mirrorEl = $('.mirror');
+const rear = {
+  camera: new THREE.PerspectiveCamera(24, 3, 0.5, 1800),
+  look: new THREE.Vector3(),
+  scene: new THREE.Scene(),
+  ortho: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+  target: null,
+  quad: null,
+  rect: null,
+  frame: 0,
+};
+rear.camera.layers.enable(1);
+
+function setupMirror() {
+  const live = !!renderer && quality !== 'low';
+  mirrorEl.classList.toggle('static', !live);
+  if (!live || rear.target) return;
+  rear.target = new THREE.WebGLRenderTarget(256, 80, { type: THREE.HalfFloatType });
+  rear.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+    uniforms: { map: { value: rear.target.texture }, size: { value: new THREE.Vector2(1, 1) }, radius: { value: 12 } },
+    depthTest: false,
+    depthWrite: false,
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: /* glsl */ `
+      uniform sampler2D map;
+      uniform vec2 size;
+      uniform float radius;
+      varying vec2 vUv;
+      void main() {
+        // rounded-rectangle glass, matching the CSS housing
+        vec2 p = (vUv - 0.5) * size;
+        vec2 q = abs(p) - (size * 0.5 - radius);
+        if (length(max(q, 0.0)) > radius) discard;
+        vec3 col = texture2D(map, vec2(1.0 - vUv.x, vUv.y)).rgb; // flipped left-right, like a mirror
+        col *= 0.9 - 0.25 * dot(vUv - 0.5, vUv - 0.5);          // slight tint and edge falloff
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  }));
+  rear.scene.add(rear.quad);
+  measureMirror();
+}
+
+function measureMirror() {
+  if (!rear.target) return;
+  const r = $('#mirrorGlass').getBoundingClientRect();
+  rear.rect = r.width > 4 && r.height > 4 ? r : null;
+  if (!rear.rect) return;
+  const ratio = renderer.getPixelRatio();
+  rear.target.setSize(Math.round(r.width * ratio), Math.round(r.height * ratio));
+  rear.quad.material.uniforms.size.value.set(r.width, r.height);
+  rear.quad.material.uniforms.radius.value = Math.min(12, r.height / 2);
+  rear.camera.aspect = r.width / r.height;
+  rear.camera.updateProjectionMatrix();
+}
+
+function renderMirror() {
+  if (quality === 'low' || !rear.rect || body.classList.contains('text-mode')) return;
+  // Refresh the reflection every other frame; draw it every frame (the main render covers it).
+  if (rear.frame++ % 2 === 0) {
+    rear.camera.position.copy(camera.position).addScaledVector(forward, 0.35);
+    rear.camera.position.y += 0.12;
+    rear.look.copy(rear.camera.position).addScaledVector(forward, -40);
+    rear.look.y -= 1.2;
+    rear.camera.lookAt(rear.look);
+    // the sea mirror would render its own reflection for this camera: use the plain sea instead
+    const seaMirror = mirrorWater?.mesh.visible;
+    if (seaMirror) { mirrorWater.mesh.visible = false; plainWater.mesh.visible = true; }
+    const autoShadow = renderer.shadowMap.autoUpdate;
+    renderer.shadowMap.autoUpdate = false;
+    renderer.setRenderTarget(rear.target);
+    renderer.render(scene, rear.camera);
+    renderer.setRenderTarget(null);
+    renderer.shadowMap.autoUpdate = autoShadow;
+    if (seaMirror) { mirrorWater.mesh.visible = true; plainWater.mesh.visible = false; }
+  }
+  const r = rear.rect;
+  const y = innerHeight - r.bottom;
+  renderer.setScissorTest(true);
+  renderer.setScissor(r.left, y, r.width, r.height);
+  renderer.setViewport(r.left, y, r.width, r.height);
+  renderer.render(rear.scene, rear.ortho);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, innerWidth, innerHeight);
 }
 
 function render() {
@@ -380,6 +574,8 @@ function loop(now) {
   const dt = Math.min((now - (last || now)) / 1000, 0.1);
   last = now;
   if (body.classList.contains('text-mode')) return;
+  // While a demo runs in the monitor, freeze the road behind it and give the demo the GPU.
+  if (demo.isOpen()) return;
 
   stepDrive(dt);
   const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 3.2);
@@ -397,15 +593,19 @@ function loop(now) {
   lastRender = now;
   update(now, dt);
   render();
+  renderMirror();
 
-  // Auto quality: if the first few seconds of driving run slowly, drop shadows and bloom.
-  if (!forced && quality === 'high' && perf.frames < 240 && !idle) {
+  // Auto quality: if driving runs slowly (under ~32 fps), step down one tier and measure again.
+  if (!forced && quality !== 'low' && !idle) {
     perf.frames++;
     perf.time += dt;
-    if (perf.frames === 120 && perf.time / perf.frames > 1 / 32) {
-      quality = 'low';
-      setupQuality();
-      resize();
+    if (perf.frames === 90) {
+      if (perf.time / perf.frames > 1 / 32) {
+        quality = TIERS[TIERS.indexOf(quality) - 1];
+        setupQuality();
+        resize();
+      }
+      perf.frames = perf.time = 0;
     }
   }
 }
@@ -415,17 +615,18 @@ async function start() {
   await loadFonts();
   const photo = content.about.photo ? await loadImage(content.about.photo) : null;
 
-  terrain = createTerrain({ road, zones, island, detail: quality === 'high' ? 1 : 0.7, texture: texture(drawGroundDetailTexture(), { repeat: true }) });
+  terrain = createTerrain({ road, zones, island, detail: quality === 'low' ? 0.7 : 1, texture: texture(drawGroundDetailTexture(), { repeat: true }) });
   scene.add(terrain.mesh);
   buildSigns({ scene, road, stops, photo, mats, texture, height: terrain.height });
   scenery = buildScenery({ scene, road, zones, height: terrain.height, stops, island, texture, mats });
   timeOfDay = createTimeOfDay({
-    scene, sky, water, hemi, sunLight, headlight,
+    scene, sky, water: waters, hemi, sunLight, headlight,
     nightMaterials: scenery.nightMaterials, glowMaterials: scenery.glowMaterials, beams: scenery.beams,
   });
 
   setupQuality();
   addEventListener('resize', resize);
+  addEventListener('resize', measureMirror);
   addEventListener('scroll', readScroll, { passive: true });
   resize();
 
@@ -446,7 +647,7 @@ async function start() {
   const FORWARD = ['ArrowUp', 'w', 'W'], REVERSE = ['ArrowDown', 's', 'S'];
   let keyStop = 0, keyTime = 0;
   addEventListener('keydown', (e) => {
-    if (body.classList.contains('text-mode') || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (body.classList.contains('text-mode') || demo.isOpen() || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
     const fwd = FORWARD.includes(e.key), rev = REVERSE.includes(e.key);
     if (fwd || rev) {
@@ -490,7 +691,9 @@ async function start() {
 
   if (params.has('debug')) window.__drive = { renderer, scene, get quality() { return quality; } };
   update(performance.now(), 0);
+  measureMirror();
   render();
+  renderMirror();
   requestAnimationFrame(loop);
   $('#loader').classList.add('done');
 }

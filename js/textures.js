@@ -662,6 +662,82 @@ export function drawRoadTexture() {
   return c;
 }
 
+/**
+ * Surface detail for one road tile (same layout as drawRoadTexture): a normal map for the
+ * aggregate and cracks, and a roughness map where tyre tracks and paint are polished smoother.
+ */
+export function drawRoadSurfaceMaps() {
+  const W = 256, H = 512;
+  const rand = mulberry32(31);
+  const height = new Float32Array(W * H);
+  // fine aggregate
+  for (let i = 0; i < W * H; i++) height[i] = rand() * 0.55;
+  // a few hairline cracks
+  for (let c = 0; c < 9; c++) {
+    let x = rand() * W, y = rand() * H, a = rand() * Math.PI * 2;
+    for (let s = 0; s < 120; s++) {
+      a += (rand() - 0.5) * 0.6;
+      x = (x + Math.cos(a) + W) % W;
+      y = (y + Math.sin(a) + H) % H;
+      height[(y | 0) * W + (x | 0)] = -1.6;
+    }
+  }
+  const [normal, n] = makeCanvas(W, H);
+  const img = n.createImageData(W, H);
+  const h = (x, y) => height[((y + H) % H) * W + ((x + W) % W)];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const dx = (h(x + 1, y) - h(x - 1, y)) * 1.4;
+      const dy = (h(x, y + 1) - h(x, y - 1)) * 1.4;
+      const len = Math.hypot(dx, dy, 1);
+      const i = (y * W + x) * 4;
+      img.data[i] = ((-dx / len) * 0.5 + 0.5) * 255;
+      img.data[i + 1] = ((dy / len) * 0.5 + 0.5) * 255;
+      img.data[i + 2] = ((1 / len) * 0.5 + 0.5) * 255;
+      img.data[i + 3] = 255;
+    }
+  }
+  n.putImageData(img, 0, 0);
+
+  const [rough, r] = makeCanvas(W, H);
+  r.fillStyle = 'rgb(252,252,252)';
+  r.fillRect(0, 0, W, H);
+  for (const x of [38, 90, 166, 218]) {
+    const g = r.createLinearGradient(x - 16, 0, x + 16, 0);
+    g.addColorStop(0, 'rgba(205,205,205,0)');
+    g.addColorStop(0.5, 'rgba(205,205,205,0.9)');
+    g.addColorStop(1, 'rgba(205,205,205,0)');
+    r.fillStyle = g;
+    r.fillRect(x - 16, 0, 32, H);
+  }
+  r.fillStyle = 'rgb(175,175,175)';
+  r.fillRect(10, 0, 7, H);
+  r.fillRect(239, 0, 7, H);
+  r.fillRect(124, 0, 8, 240);
+  return { normal, rough };
+}
+
+/** Alpha-tested tuft of grass blades (white-ish so per-instance colour tints it). */
+export function drawGrassTuftTexture() {
+  const [c, ctx] = makeCanvas(128, 128);
+  const rand = mulberry32(17);
+  for (let i = 0; i < 26; i++) {
+    const x = 10 + rand() * 108, lean = (rand() - 0.5) * 34, hgt = 60 + rand() * 66, w = 3 + rand() * 4;
+    const g = ctx.createLinearGradient(0, 128, 0, 128 - hgt);
+    const v = 150 + rand() * 80;
+    g.addColorStop(0, `rgb(${v * 0.55},${v * 0.62},${v * 0.45})`);
+    g.addColorStop(1, `rgb(${v},${v},${v * 0.8})`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, 128);
+    ctx.quadraticCurveTo(x + lean * 0.3, 128 - hgt * 0.6, x + lean, 128 - hgt);
+    ctx.quadraticCurveTo(x + lean * 0.3 + w * 0.3, 128 - hgt * 0.6, x + w / 2, 128);
+    ctx.closePath();
+    ctx.fill();
+  }
+  return c;
+}
+
 /** Neutral speckle detail for the terrain; the hue comes from per-vertex colours. */
 export function drawGroundDetailTexture() {
   const [c, ctx] = makeCanvas(256, 256);
@@ -698,18 +774,27 @@ export function drawFieldTexture(kind) {
   return c;
 }
 
-/** Building facade (8 × 8 windows = one 24 m tile) plus a matching night-lights map. */
+/**
+ * Building facade (8 × 8 windows = one 24 m tile) plus a matching night-lights map and a
+ * roughness map (glass is mirror-smooth, concrete is matte) so windows reflect the sky.
+ */
 export function drawFacadeTextures() {
   const [map, m] = makeCanvas(512, 512);
   const [glow, g] = makeCanvas(512, 512);
+  const [rough, r2] = makeCanvas(512, 512);
   m.fillStyle = '#d9d6cf';
   m.fillRect(0, 0, 512, 512);
   g.fillStyle = '#000';
   g.fillRect(0, 0, 512, 512);
+  r2.fillStyle = 'rgb(225,225,225)';
+  r2.fillRect(0, 0, 512, 512);
   const rand = mulberry32(21);
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const x = col * 64 + 12, y = row * 64 + 14, w = 40, h = 36;
+      const smooth = (75 + rand() * 30) | 0; // glass: glossy, but not a perfect mirror
+      r2.fillStyle = `rgb(${smooth},${smooth},${smooth})`;
+      r2.fillRect(x, y, w, h);
       const glass = m.createLinearGradient(x, y, x + w, y + h);
       glass.addColorStop(0, '#47586b');
       glass.addColorStop(1, '#232c37');
@@ -726,7 +811,7 @@ export function drawFacadeTextures() {
       }
     }
   }
-  return { map, glow };
+  return { map, glow, rough };
 }
 
 /** Vertical fade used by the lighthouse beams. */
