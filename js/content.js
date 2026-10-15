@@ -213,12 +213,14 @@ export default {
     },
   ],
 
-  // The car radio. Played through Spotify's official embedded player (the band is credited
-  // on the radio and in the text version). Swap in any Spotify track link to change the song.
+  // The car stereo. Plays the band's official YouTube release in full. YouTube requires its
+  // player to stay visible, so it shows on the car's pop-up media screen while playing.
+  // The band is credited on the stereo and in the text version.
   music: {
     title: 'White Toyota',
     artist: 'SunKissed Lola',
     year: '2023',
+    youtube: '9q2l-4VHPVo', // official audio, from the band's YouTube channel
     spotify: 'https://open.spotify.com/track/0SkHb5qlgDmho1ffqLxO4i',
     artistUrl: 'https://open.spotify.com/artist/4bLLB1dbsRVUTcMpnDGDO2',
   },

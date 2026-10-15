@@ -55,7 +55,7 @@ $('#wheel').innerHTML = wheelSVG();
 $('#wheelLogo').textContent = profile.initials;
 $('#cluster').innerHTML = clusterSVG();
 renderStatic(content, $('#static'));
-createRadio(content.music, { root: $('#radio'), toggle: $('#radioToggle') });
+createRadio(content.music, { root: $('#radio'), toggle: $('#radioToggle'), screenEl: $('.screen') });
 const route = renderRoute(groups, END, $('#route'));
 $('#track').style.height = `${stops.length * 100}vh`;
 
@@ -670,7 +670,7 @@ async function start() {
   let keyStop = 0, keyTime = 0;
   addEventListener('keydown', (e) => {
     if (body.classList.contains('text-mode') || demo.isOpen() || e.altKey || e.ctrlKey || e.metaKey) return;
-    if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable], [role="slider"]')) return;
     const fwd = FORWARD.includes(e.key), rev = REVERSE.includes(e.key);
     if (fwd || rev) {
       e.preventDefault();

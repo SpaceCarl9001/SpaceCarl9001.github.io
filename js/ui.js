@@ -287,5 +287,5 @@ export function renderStatic(c, el) {
       </div>
     </section>
 
-    ${music?.title ? `<footer class="s-music">Music on the drive: “${esc(music.title)}” by <a href="${esc(music.artistUrl || music.spotify)}" target="_blank" rel="noopener">${esc(music.artist)}</a>${music.year ? ` (${esc(music.year)})` : ''}, played through <a href="${esc(music.spotify)}" target="_blank" rel="noopener">Spotify</a>.</footer>` : ''}`;
+    ${music?.title ? `<footer class="s-music">Music on the drive: “${esc(music.title)}” by <a href="${esc(music.artistUrl || music.spotify)}" target="_blank" rel="noopener">${esc(music.artist)}</a>${music.year ? ` (${esc(music.year)})` : ''}, played in full from the band's official YouTube release. Also on <a href="${esc(music.spotify)}" target="_blank" rel="noopener">Spotify</a>.</footer>` : ''}`;
 }

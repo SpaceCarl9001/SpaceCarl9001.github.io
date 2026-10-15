@@ -69,10 +69,15 @@ by itself. To force a tier, add `?quality=high`, `?quality=medium` or `?quality=
 
 ## Music
 
-The car radio plays **“White Toyota” by [SunKissed Lola](https://open.spotify.com/artist/4bLLB1dbsRVUTcMpnDGDO2)**
-(2023) through Spotify's official embedded player. The song is not hosted on this site; it streams
-from Spotify, which licenses it, and the band is credited on the radio and in the text version.
-Change the song in the `music` section of `js/content.js`.
+The car stereo plays **“White Toyota” by [SunKissed Lola](https://open.spotify.com/artist/4bLLB1dbsRVUTcMpnDGDO2)**
+(2023), the full song, from the band's official YouTube release. The song is not hosted on this
+site; it streams from YouTube, which licenses it, and the band is credited on the stereo's screen
+and in the text version.
+
+YouTube requires its player to stay visible while it plays, so the song plays on the media screen
+that rises out of the dashboard. Lowering the screen, closing the ♪ pop-over (small screens),
+switching to the text version or opening a demo pauses it. Change the song in the `music` section
+of `js/content.js` (`youtube` is the video ID).
 
 ## Deploy
 

@@ -614,7 +614,7 @@ a { color: inherit; }
   position: absolute;
   left: var(--car-x);
   transform: translateX(-50%);
-  bottom: calc(var(--dash-h) * 0.1);
+  bottom: calc(var(--dash-h) * 0.1 + 54px); /* the stereo head unit sits below it */
   width: clamp(190px, 17vw, 260px);
   padding: 11px 14px 12px;
   border-radius: 10px;
@@ -747,41 +747,158 @@ a { color: inherit; }
   padding: 4px 7px 3px;
 }
 
-/* ───────────────────────── car radio ───────────────────────── */
-.radio {
+/* ───────────────────────── car stereo ───────────────────────── */
+/* An anchor at the car's centre line; the head unit sits on the console below the nav screen,
+   and the media screen rises out of the dash just above it. */
+.stereo {
   position: fixed;
   z-index: 11;
-  right: 3vw;
-  bottom: calc(var(--dash-h) * 0.1);
-  width: clamp(240px, 21vw, 330px);
-  padding: 7px 8px 8px;
-  border-radius: 12px;
-  background: linear-gradient(#0b0e14, #07090d);
-  border: 3px solid #0c0d10;
-  outline: 1px solid #2a2f39;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-  color: #cfe3ff;
+  left: var(--car-x);
+  bottom: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
-.radio-head {
+.stereo > * { pointer-events: auto; }
+
+.stereo-face {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--dash-h) * 0.1);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: clamp(236px, 19vw, 300px);
+  height: 46px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: linear-gradient(#24272d, #15171b 55%, #0f1013);
+  border: 1px solid #33363d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 6px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.knob {
+  --turn: 54deg;
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #4a4e57, #1b1d22 70%);
+  border: 2px solid #0b0c0e;
+  box-shadow: 0 0 0 2px #2c2f36, 0 2px 4px rgba(0, 0, 0, 0.6);
+  transform: rotate(var(--turn));
+  cursor: grab;
+  touch-action: none;
+}
+.knob::before {
+  /* knurled grip */
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.08) 0 6deg, transparent 6deg 18deg);
+}
+.knob-mark {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 3px;
+  height: 8px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #7dd3fc;
+  box-shadow: 0 0 6px #7dd3fc;
+}
+.knob:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 3px; }
+
+.st-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #3a3e46;
+  background: linear-gradient(#30333a, #1c1e23);
+  color: #d4dbe6;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+.st-btn:hover { color: #fff; background: linear-gradient(#383c44, #22252b); }
+.st-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6); }
+.st-btn:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+.st-play { width: 32px; color: #7dffb0; font-size: 12px; }
+.stereo.playing .st-play { color: #7dd3fc; font-size: 11px; letter-spacing: 1px; }
+
+.st-display {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #061016;
+  border: 1px solid #12303b;
+  box-shadow: inset 0 0 10px rgba(0, 200, 255, 0.08);
+  font: 700 10px ui-monospace, 'Cascadia Code', Consolas, monospace;
+  color: #7dd3fc;
+  text-shadow: 0 0 6px rgba(125, 211, 252, 0.55);
+}
+.st-line1, .st-line2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-line2 { font-weight: 500; color: #5fb4d6; }
+
+/* the motorised media screen */
+.media {
+  position: absolute;
+  left: 0;
+  bottom: var(--media-bottom, 200px);
+  transform: translateX(-50%);
+  width: 324px;
+  height: 252px;
+  overflow: hidden;           /* it slides up out of this slot, like out of the dash */
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear 0.55s;
+}
+.media.up { pointer-events: auto; visibility: visible; transition: visibility 0s; }
+.media-bezel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 7px 7px;
+  border-radius: 12px 12px 0 0;
+  background: #0c0d10;
+  border: 1px solid #2a2f39;
+  border-bottom: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(100%);
+  transition: transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.media.up .media-bezel { transform: none; }
+.media-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 2px 6px;
+  height: 30px;
   min-width: 0;
+  padding: 0 2px;
 }
-.radio-label {
+.media-src {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  font: 700 11px var(--font-sign);
+  font: 700 10.5px var(--font-sign);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #6d9bd6;
 }
 .radio-led { width: 7px; height: 7px; border-radius: 50%; background: #3a4150; }
-.radio.on .radio-led { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
-.radio-credit {
+.stereo.playing .radio-led { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+.media-credit {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -790,52 +907,36 @@ a { color: inherit; }
   font-size: 11px;
   color: #8fb3e0;
 }
-.radio-credit a { color: #cfe3ff; text-decoration: underline; text-decoration-color: rgba(207, 227, 255, 0.35); }
-.radio-hide {
-  display: none;
+.media-credit a { color: #e6efff; text-decoration: underline; text-decoration-color: rgba(230, 239, 255, 0.35); }
+.media-down {
   flex-shrink: 0;
-  border: 0;
-  background: none;
+  width: 24px;
+  height: 20px;
+  border: 1px solid #2f3540;
+  border-radius: 5px;
+  background: #151922;
   color: #8fb3e0;
   cursor: pointer;
-  font-size: 13px;
-  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1;
 }
-.radio-player { position: relative; height: 80px; border-radius: 10px; overflow: hidden; background: #121722; }
-.radio-on {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 0 14px;
-  border: 0;
-  background: linear-gradient(120deg, #1a2333, #10151f);
-  color: #fff;
-  text-align: left;
-  cursor: pointer;
+.media-down:hover { color: #fff; }
+/* YouTube's player needs at least 200×200: this is 308×208 */
+.media-player { position: relative; flex: 1; min-height: 208px; border-radius: 6px; overflow: hidden; background: #000; }
+.media-yt, .media-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* while the media screen is up, a card on the right ends above it instead of covering it */
+@media (min-width: 1101px) {
+  body.media-up .card[data-side="right"] {
+    top: 84px;
+    transform: translate(14px, 0);
+    max-height: calc(var(--media-top, 60vh) - 84px - 14px);
+  }
+  body.media-up .card.show[data-side="right"] { transform: none; }
 }
-.radio-on:hover { background: linear-gradient(120deg, #223049, #131a27); }
-.radio-on:focus-visible { outline: 2px solid #7dd3fc; outline-offset: -2px; }
-.radio-play {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #1ed760;
-  color: #04120a;
-  font-size: 15px;
-  padding-left: 3px;
-}
-.radio-on strong { display: block; font: 700 14px var(--font-display); }
-.radio-on small { display: block; margin-top: 2px; font-size: 11.5px; color: #8fb3e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.radio.on .radio-on { display: none; }
-.radio-embed, .radio-embed > * { display: block; width: 100%; height: 80px; border: 0; }
+
 .radio-toggle { display: none; font-size: 15px; padding: 6px 12px; }
-body.text-mode .radio,
+body.text-mode .stereo,
 body.text-mode .radio-toggle { display: none; }
 
 /* ───────────────────────── demo monitor ───────────────────────── */
@@ -1117,21 +1218,35 @@ body.text-mode .static {
 @media (max-width: 1100px) {
   .screen { display: none; }
   .card-preview { display: block; }
-  /* the radio becomes a pop-over from the ♪ button; it stays mounted so music keeps playing */
+  /* the stereo becomes a pop-over from the ♪ button: screen on top, head unit below */
   .radio-toggle { display: inline-block; }
-  .radio {
+  .stereo {
     z-index: 30;
+    left: auto;
+    right: 16px;
     top: 64px;
     bottom: auto;
-    right: 16px;
     width: min(340px, calc(100vw - 32px));
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+    background: rgba(8, 10, 14, 0.92);
+    border: 1px solid #2a2f39;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
     visibility: hidden;
     opacity: 0;
     transform: translateY(-6px);
     transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
   }
-  .radio.open { visibility: visible; opacity: 1; transform: none; }
-  .radio-hide { display: block; }
+  .stereo.open { visibility: visible; opacity: 1; transform: none; }
+  .stereo .media,
+  .stereo .stereo-face { position: relative; left: auto; bottom: auto; transform: none; width: 100%; }
+  .stereo .media { height: 246px; }
+  .stereo .media-bezel { border-radius: 10px; border-bottom: 1px solid #2a2f39; }
 }
 
 @media (max-width: 760px) {
