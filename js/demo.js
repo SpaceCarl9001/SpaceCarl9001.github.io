@@ -13,6 +13,7 @@ export function createDemoMonitor({ reduceMotion = false, onOpenChange } = {}) {
   const urlText = $('#demoUrl');
   const openTab = $('#demoOpen');
   const closeBtn = $('#demoClose');
+  const picture = $('#demoImage');
   let open = false;
   let origin = null;     // the element it grew out of (and shrinks back into)
   let returnFocus = null;
@@ -29,16 +30,29 @@ export function createDemoMonitor({ reduceMotion = false, onOpenChange } = {}) {
     return `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`;
   }
 
-  function show({ url, project }, from) {
+  /**
+   * Opens the monitor with either a live demo (`url`, shown in an iframe) or a screenshot
+   * (`image`, e.g. an automation workflow).
+   */
+  function show({ url, image, project, label = 'Live demo', caption = '' }, from) {
     if (open) return;
     open = true;
     origin = from || null;
     returnFocus = document.activeElement;
-    title.textContent = `${project} · Live demo`;
-    urlText.textContent = url.replace(/^https?:\/\//, '');
-    openTab.href = url;
+    title.textContent = `${project} · ${label}`;
+    const isImage = !!image;
+    root.classList.toggle('is-image', isImage);
+    const href = isImage ? new URL(image, location.href).href : url;
+    urlText.textContent = isImage ? caption : url.replace(/^https?:\/\//, '');
+    openTab.href = href;
+    openTab.firstChild.textContent = isImage ? 'Full size ' : 'Open in new tab ';
     frame.classList.remove('loaded');
-    frame.src = url;
+    if (isImage) {
+      picture.src = image;
+      picture.alt = `${project}: ${label}`;
+    } else {
+      frame.src = url;
+    }
     root.hidden = false;
     document.body.classList.add('demo-open');
     onOpenChange?.(true);
@@ -54,8 +68,9 @@ export function createDemoMonitor({ reduceMotion = false, onOpenChange } = {}) {
     open = false;
     const finish = () => {
       root.hidden = true;
-      frame.src = 'about:blank'; // stop the demo running in the background
+      if (frame.getAttribute('src')) frame.src = 'about:blank'; // stop the demo running in the background
       frame.classList.remove('loaded');
+      root.classList.remove('is-image');
       document.body.classList.remove('demo-open');
       onOpenChange?.(false);
       returnFocus?.focus?.({ preventScroll: true });
@@ -81,7 +96,7 @@ export function createDemoMonitor({ reduceMotion = false, onOpenChange } = {}) {
     if (e.key === 'Escape') { e.preventDefault(); hide(); return; }
     // keep keyboard focus inside the monitor
     if (e.key === 'Tab') {
-      const stops = [openTab, closeBtn, frame];
+      const stops = root.classList.contains('is-image') ? [openTab, closeBtn] : [openTab, closeBtn, frame];
       const i = stops.indexOf(document.activeElement);
       e.preventDefault();
       stops[(i + (e.shiftKey ? stops.length - 1 : 1)) % stops.length].focus();

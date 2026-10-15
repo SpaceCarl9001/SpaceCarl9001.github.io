@@ -69,6 +69,7 @@ const hud = {
   next: $('#navNext'),
   bar: $('#navBar'),
   demoBtn: $('#demoBtn'),
+  previewBtn: $('#previewBtn'),
   screen: $('.screen'),
 };
 
@@ -326,12 +327,24 @@ function setDemoStop(stop) {
   if (stop === demoStop) return;
   demoStop = stop;
   hud.demoBtn.hidden = !(stop.links || []).some(isDemoLink);
+  // a project screenshot (e.g. an automation workflow) shown on the dash screen
+  const preview = stop.preview?.image ? stop.preview : null;
+  hud.previewBtn.hidden = !preview;
+  if (preview) {
+    $('#previewImg').src = preview.image;
+    $('#previewLabel').textContent = preview.label || 'Preview';
+    hud.previewBtn.setAttribute('aria-label', `Open ${preview.label || 'preview'} for ${stop.title}`);
+  }
 }
+const showPreview = (stop, from) => demo.show({ image: stop.preview.image, label: stop.preview.label || 'Preview', caption: stop.preview.caption, project: stop.title }, from);
+hud.previewBtn.addEventListener('click', () => { if (demoStop?.preview?.image) showPreview(demoStop, hud.previewBtn); });
 hud.demoBtn.addEventListener('click', () => {
   const link = demoStop?.links?.find(isDemoLink);
   if (link) demo.show({ url: link.url, project: demoStop.title }, hud.screen);
 });
 hud.card.addEventListener('click', (e) => {
+  const shot = e.target.closest('[data-preview]');
+  if (shot && activeCard >= 0 && stops[activeCard].preview?.image) { showPreview(stops[activeCard], shot); return; }
   const a = e.target.closest('a[data-demo]');
   // plain left-clicks only: ctrl/cmd/shift-click still opens a new tab
   if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || activeCard < 0) return;

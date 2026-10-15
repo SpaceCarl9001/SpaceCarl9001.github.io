@@ -179,6 +179,12 @@ export default {
         'Attendance notifications used to be coded and plotted by hand, from Slack into Google Sheets and then into Assembled. This automation takes over the whole chain, so it now happens with no clicks at all. I then extended it with an n8n workflow that also logs each absence directly in Zoho, so the record is created the moment the notification comes in.',
       tags: ['Slack', 'Google Sheets', 'Assembled', 'Zoho', 'Automation'],
       stack: ['n8n', 'Google Apps Script', 'JavaScript', 'Slack webhooks', 'Assembled API', 'Zoho'],
+      // Shown on the dashboard screen at this stop; click it to open it big in the monitor.
+      preview: {
+        image: 'assets/attendance-n8n-workflow.png',
+        label: 'n8n workflow',
+        caption: 'Runs every 5 minutes: reads the Slack channel, matches people to Zoho employees, and adds each absence record.',
+      },
       links: [],
     },
     {

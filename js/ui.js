@@ -73,7 +73,7 @@ export function buildStops(c) {
     group: 'Projects', kind: 'billboard', variant: 'project', accent: p.accent || '#ff6b35',
     kicker: `Project ${String(i + 1).padStart(2, '0')}${p.year ? ` · ${p.year}` : ''}`,
     title: p.title, subtitle: p.tagline, summary: p.tagline,
-    body: [p.description], chips: p.tags, stack: p.stack, links: p.links,
+    body: [p.description], chips: p.tags, stack: p.stack, links: p.links, preview: p.preview,
     signChips: p.stack?.length ? p.stack : p.tags, // the billboard shows how it was built
   }));
 
@@ -120,6 +120,9 @@ export function cardHTML(stop) {
     out.push(`<p class="card-label">Awards</p><ul class="card-bullets card-awards">${stop.awards.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>`);
   }
   if (stop.chips?.length) out.push(`<ul class="chips">${stop.chips.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>`);
+  if (stop.preview?.image) {
+    out.push(`<button class="card-preview" type="button" data-preview><img src="${esc(stop.preview.image)}" alt="${esc(stop.title)}: ${esc(stop.preview.label || 'preview')}" loading="lazy"><span>⤢ ${esc(stop.preview.label || 'Preview')}</span></button>`);
+  }
   if (stop.stack?.length) {
     out.push(`<p class="card-label">Built with</p><ul class="chips chips-stack">${stop.stack.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>`);
   }
@@ -267,6 +270,7 @@ export function renderStatic(c, el) {
             <p class="s-tagline">${esc(p.tagline)}</p>
             <p>${esc(p.description)}</p>
             <ul class="s-tags">${(p.tags || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+            ${p.preview?.image ? `<figure class="s-figure"><a href="${esc(p.preview.image)}" target="_blank" rel="noopener"><img src="${esc(p.preview.image)}" alt="${esc(p.title)}: ${esc(p.preview.label || 'preview')}" loading="lazy"></a><figcaption>${esc(p.preview.caption || p.preview.label || '')}</figcaption></figure>` : ''}
             ${p.stack?.length ? `<p class="s-meta s-built">Built with</p><ul class="s-tags s-stack">${p.stack.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
             <div class="s-links">${links(p.links)}</div>
           </article>`).join('')}

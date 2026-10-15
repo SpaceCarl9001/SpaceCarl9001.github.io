@@ -57,6 +57,10 @@
         <div id="navNow" class="screen-now">Start line</div>
         <button id="demoBtn" class="screen-demo" type="button" hidden><span aria-hidden="true">▶</span> Demo</button>
       </div>
+      <button id="previewBtn" class="screen-preview" type="button" hidden>
+        <img id="previewImg" alt="">
+        <span class="screen-preview-tag"><span aria-hidden="true">⤢</span> <span id="previewLabel">Preview</span></span>
+      </button>
       <div id="navNext" class="screen-next"></div>
       <div class="screen-bar"><span id="navBar"></span></div>
     </div>
@@ -78,6 +82,7 @@
       <div class="demo-body">
         <p class="demo-loading">Loading demo…</p>
         <iframe id="demoFrame" title="Live demo" allow="clipboard-write; fullscreen"></iframe>
+        <img id="demoImage" class="demo-image" alt="">
       </div>
     </div>
   </div>
