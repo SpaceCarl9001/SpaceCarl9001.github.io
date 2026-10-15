@@ -213,6 +213,16 @@ export default {
     },
   ],
 
+  // The car radio. Played through Spotify's official embedded player (the band is credited
+  // on the radio and in the text version). Swap in any Spotify track link to change the song.
+  music: {
+    title: 'White Toyota',
+    artist: 'SunKissed Lola',
+    year: '2023',
+    spotify: 'https://open.spotify.com/track/0SkHb5qlgDmho1ffqLxO4i',
+    artistUrl: 'https://open.spotify.com/artist/4bLLB1dbsRVUTcMpnDGDO2',
+  },
+
   contact: {
     headline: "Let's work together",
     message: "Have a role, a project, or just want to say hi? I'm based in Dumaguete City, Philippines, and my inbox is always open.",

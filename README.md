@@ -67,6 +67,13 @@ Desktops start on high. If driving runs below about 30 fps, the site steps down 
 by itself. To force a tier, add `?quality=high`, `?quality=medium` or `?quality=low` to the URL.
 `?stop=5` starts the car at a given stop (0 = start line).
 
+## Music
+
+The car radio plays **“White Toyota” by [SunKissed Lola](https://open.spotify.com/artist/4bLLB1dbsRVUTcMpnDGDO2)**
+(2023) through Spotify's official embedded player. The song is not hosted on this site; it streams
+from Spotify, which licenses it, and the band is credited on the radio and in the text version.
+Change the song in the `music` section of `js/content.js`.
+
 ## Deploy
 
 It's a static site, so any static host works:

@@ -7,6 +7,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import content from './content.js';
 import { buildStops, cardHTML, renderStatic, renderRoute, clusterSVG, isDemoLink } from './ui.js';
 import { createDemoMonitor } from './demo.js';
+import { createRadio } from './radio.js';
 import { windshieldSVG, dashSVG, wheelSVG } from './cockpit.js';
 import { drawMountainTexture, drawGlowTexture, drawGroundDetailTexture, loadImage, loadFonts } from './textures.js';
 import { LANE, EYE, SPACING, SEA_LEVEL } from './world/config.js';
@@ -54,6 +55,7 @@ $('#wheel').innerHTML = wheelSVG();
 $('#wheelLogo').textContent = profile.initials;
 $('#cluster').innerHTML = clusterSVG();
 renderStatic(content, $('#static'));
+createRadio(content.music, { root: $('#radio'), toggle: $('#radioToggle') });
 const route = renderRoute(groups, END, $('#route'));
 $('#track').style.height = `${stops.length * 100}vh`;
 

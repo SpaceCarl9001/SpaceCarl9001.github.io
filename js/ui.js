@@ -195,7 +195,7 @@ export function clusterSVG() {
 
 /** Plain, accessible version of everything: used by screen readers and the "Text version" toggle. */
 export function renderStatic(c, el) {
-  const { profile, about, skills = [], projects = [], contact, experience = [], education = [], awards = [] } = c;
+  const { profile, about, skills = [], projects = [], contact, experience = [], education = [], awards = [], music } = c;
   const links = (list = []) => list.map((l) => linkHTML(l, 's-link')).join('');
   const where = (j) => esc([j.company, j.account].filter(Boolean).join(' · '));
   el.innerHTML = `
@@ -285,5 +285,7 @@ export function renderStatic(c, el) {
         ${linkHTML({ label: contact.email, url: `mailto:${contact.email}` }, 's-link s-link-primary')}
         ${links(contact.links)}
       </div>
-    </section>`;
+    </section>
+
+    ${music?.title ? `<footer class="s-music">Music on the drive: “${esc(music.title)}” by <a href="${esc(music.artistUrl || music.spotify)}" target="_blank" rel="noopener">${esc(music.artist)}</a>${music.year ? ` (${esc(music.year)})` : ''}, played through <a href="${esc(music.spotify)}" target="_blank" rel="noopener">Spotify</a>.</footer>` : ''}`;
 }
