@@ -471,7 +471,7 @@ a { color: inherit; }
    --cabin / --cabin-warm are set from the time of day so the interior catches the light. */
 :root {
   --wheel-x: 36%;
-  --car-x: 62%;
+  --car-x: 60%;
   --cabin: 1;
   --cabin-warm: 0;
 }
@@ -851,10 +851,10 @@ a { color: inherit; }
 
 /* the motorised media screen */
 .media {
+  /* on the dash, just right of the head unit, in front of the console's right-hand vent */
   position: absolute;
-  left: 0;
-  bottom: var(--media-bottom, 200px);
-  transform: translateX(-50%);
+  left: calc(clamp(236px, 19vw, 300px) / 2 + 6px);
+  bottom: 6px;
   width: 214px;  /* 200px player + a thin bezel: YouTube's minimum size */
   height: 232px;
   overflow: hidden;           /* it slides up out of this slot, like out of the dash */

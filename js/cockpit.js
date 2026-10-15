@@ -68,7 +68,7 @@ export function dashSVG() {
 
   let slots = '';
   for (let x = 170; x <= 950; x += 30) {
-    if (x > 500 && x < 740) continue; // the centre stack sits here
+    if (x > 480 && x < 720) continue; // the centre stack sits here
     slots += `<rect x="${x}" y="${f1(top(x) + 7)}" width="18" height="3.2" rx="1.6"/>`;
   }
 
@@ -115,10 +115,10 @@ export function dashSVG() {
       ${vent(14, 104, 66, 46)}
 
       <!-- centre stack: vents either side of the screen, hazard switch above it -->
-      <path class="stack" d="M492,${f1(top(492) + 16)} L752,${f1(top(752) + 16)} L760,220 L484,220 Z" fill="url(#stackFill)"/>
-      ${vent(500, 70, 28, 84, 6)}
-      ${vent(716, 70, 28, 84, 6)}
-      <g class="hazard"><rect x="606" y="42" width="28" height="16" rx="4"/><path d="M620,45 L627,55 L613,55 Z"/></g>
+      <path class="stack" d="M472,${f1(top(472) + 16)} L732,${f1(top(732) + 16)} L740,220 L464,220 Z" fill="url(#stackFill)"/>
+      ${vent(480, 70, 28, 84, 6)}
+      ${vent(696, 70, 28, 84, 6)}
+      <g class="hazard"><rect x="586" y="42" width="28" height="16" rx="4"/><path d="M600,45 L607,55 L593,55 Z"/></g>
 
       <!-- passenger side: glovebox and door vent -->
       <rect class="glovebox" x="790" y="118" width="170" height="92" rx="14"/>

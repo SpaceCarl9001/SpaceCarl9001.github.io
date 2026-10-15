@@ -62,17 +62,15 @@ export function createRadio(music, { root, toggle, screenEl }) {
     if (!up) pause();
   }
 
-  // The media screen rises from right behind the nav screen's top edge.
+  // Tells a right-hand info card where the media screen starts, so it can end above it.
   function place() {
-    const r = screenEl?.getBoundingClientRect();
-    if (!r?.height) return;
-    root.style.setProperty('--media-bottom', `${document.documentElement.clientHeight - r.top + 4}px`);
-    document.documentElement.style.setProperty('--media-top', `${r.top - 4 - media.offsetHeight}px`);
-    // only make a right-hand card room for the screen when they would actually overlap
+    const m = media.getBoundingClientRect();
+    if (!m.height) return;
+    document.documentElement.style.setProperty('--media-top', `${m.top - 6}px`);
+    // only make a card room when the two would actually overlap
     const w = document.documentElement.clientWidth;
     const cardLeft = w - 28 - Math.min(410, w * 0.36);
-    const screenRight = r.left + r.width / 2 + media.offsetWidth / 2;
-    document.body.classList.toggle('media-clash', screenRight > cardLeft - 8);
+    document.body.classList.toggle('media-clash', m.right > cardLeft - 8);
   }
   addEventListener('resize', place);
   const watch = new ResizeObserver(place);
