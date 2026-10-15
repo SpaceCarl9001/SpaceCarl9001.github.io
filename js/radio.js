@@ -24,7 +24,7 @@ export function createRadio(music, { root, toggle, screenEl }) {
     <div class="media" aria-hidden="true">
       <div class="media-bezel">
         <div class="media-head">
-          <span class="media-src"><span class="radio-led" aria-hidden="true"></span>Media</span>
+          <span class="radio-led" aria-hidden="true"></span>
           <span class="media-credit" title="“${esc(music.title)}” by ${esc(music.artist)}${music.year ? ` (${esc(music.year)})` : ''}">${credit}</span>
           <button class="media-down" type="button" aria-label="Lower the screen (pauses the music)" title="Lower screen">▾</button>
         </div>
@@ -57,6 +57,7 @@ export function createRadio(music, { root, toggle, screenEl }) {
     media.setAttribute('aria-hidden', String(!up));
     // lets a card on the right make room for the screen (see body.media-up in style.css)
     document.body.classList.toggle('media-up', up && !narrow.matches);
+    place();
     q('.st-eject').setAttribute('aria-label', up ? 'Lower the media screen (pauses the music)' : 'Raise the media screen');
     if (!up) pause();
   }
@@ -67,6 +68,11 @@ export function createRadio(music, { root, toggle, screenEl }) {
     if (!r?.height) return;
     root.style.setProperty('--media-bottom', `${document.documentElement.clientHeight - r.top + 4}px`);
     document.documentElement.style.setProperty('--media-top', `${r.top - 4 - media.offsetHeight}px`);
+    // only make a right-hand card room for the screen when they would actually overlap
+    const w = document.documentElement.clientWidth;
+    const cardLeft = w - 28 - Math.min(410, w * 0.36);
+    const screenRight = r.left + r.width / 2 + media.offsetWidth / 2;
+    document.body.classList.toggle('media-clash', screenRight > cardLeft - 8);
   }
   addEventListener('resize', place);
   const watch = new ResizeObserver(place);
@@ -103,7 +109,8 @@ export function createRadio(music, { root, toggle, screenEl }) {
       width: '100%',
       height: '100%',
       host: 'https://www.youtube-nocookie.com',
-      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      // controls off: the stereo's own knob and buttons drive it, so the screen shows just the album art
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, cc_load_policy: 0 },
       events: {
         onReady: () => {
           ready = true;
