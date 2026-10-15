@@ -297,7 +297,8 @@ function scrollToStop(i, smooth = true) {
 }
 
 function resize() {
-  const w = innerWidth, h = innerHeight;
+  // The canvas's real size: on Windows a page scrollbar makes it narrower than the window.
+  const w = renderer.domElement.clientWidth || innerWidth, h = renderer.domElement.clientHeight || innerHeight;
   const ratio = Math.min(devicePixelRatio, quality === 'low' ? 1.75 : 1.5);
   renderer.setPixelRatio(ratio);
   renderer.setSize(w, h, false);
@@ -523,19 +524,25 @@ function setupMirror() {
 
 function measureMirror() {
   if (!rear.target) return;
-  const r = $('#mirrorGlass').getBoundingClientRect();
+  const g = $('#mirrorGlass').getBoundingClientRect();
+  const c = renderer.domElement.getBoundingClientRect();
+  // canvas-relative, pulled in 1px so the image never peeks past the frame
+  const r = { left: g.left - c.left + 1, top: g.top - c.top + 1, width: g.width - 2, height: g.height - 2, canvasH: c.height };
+  const same = rear.rect && ['left', 'top', 'width', 'height', 'canvasH'].every((k) => Math.abs(rear.rect[k] - r[k]) < 0.5);
   rear.rect = r.width > 4 && r.height > 4 ? r : null;
-  if (!rear.rect) return;
+  if (!rear.rect || same) return;
   const ratio = renderer.getPixelRatio();
   rear.target.setSize(Math.round(r.width * ratio), Math.round(r.height * ratio));
   rear.quad.material.uniforms.size.value.set(r.width, r.height);
-  rear.quad.material.uniforms.radius.value = Math.min(12, r.height / 2);
+  rear.quad.material.uniforms.radius.value = Math.min(11, r.height / 2);
   rear.camera.aspect = r.width / r.height;
   rear.camera.updateProjectionMatrix();
 }
 
 function renderMirror() {
-  if (quality === 'low' || !rear.rect || body.classList.contains('text-mode')) return;
+  if (quality === 'low' || !rear.target || body.classList.contains('text-mode')) return;
+  measureMirror(); // cheap; keeps the image locked to the frame if the layout shifts
+  if (!rear.rect) return;
   // Refresh the reflection every other frame; draw it every frame (the main render covers it).
   if (rear.frame++ % 2 === 0) {
     rear.camera.position.copy(camera.position).addScaledVector(forward, 0.35);
@@ -555,13 +562,13 @@ function renderMirror() {
     if (seaMirror) { mirrorWater.mesh.visible = true; plainWater.mesh.visible = false; }
   }
   const r = rear.rect;
-  const y = innerHeight - r.bottom;
+  const y = r.canvasH - (r.top + r.height);
   renderer.setScissorTest(true);
   renderer.setScissor(r.left, y, r.width, r.height);
   renderer.setViewport(r.left, y, r.width, r.height);
   renderer.render(rear.scene, rear.ortho);
   renderer.setScissorTest(false);
-  renderer.setViewport(0, 0, innerWidth, innerHeight);
+  renderer.setViewport(0, 0, renderer.domElement.clientWidth, renderer.domElement.clientHeight);
 }
 
 function render() {
