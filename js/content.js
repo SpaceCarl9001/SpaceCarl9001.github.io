@@ -148,11 +148,11 @@ export default {
         { label: 'Frameworks', items: ['Next.js', 'Node.js'] },
         { label: 'Build & ship', items: ['Supabase (Postgres + Auth)', 'Vercel', 'GitHub', 'VS Code'] },
         { label: 'AI-assisted dev', items: ['Claude / Claude Code', 'GitHub Copilot'] },
-        { label: 'Automation', items: ['Google Apps Script', 'Slack webhooks', 'REST APIs', 'Advanced Excel & Google Sheets'] },
+        { label: 'Automation', items: ['n8n', 'Google Apps Script', 'Slack webhooks', 'REST APIs', 'Advanced Excel & Google Sheets'] },
       ],
       highlights: [
         'Built and shipped a live shift bidding web app on Node.js, Supabase (Postgres + Auth) and Vercel that assigns schedules by agent rank and auto-generates full-coverage schedules.',
-        'Automated attendance notifications end to end with Apps Script, Slack webhooks and the Assembled API, with zero clicks.',
+        'Automated attendance notifications end to end with Apps Script, Slack webhooks and the Assembled API, then used n8n to log every absence straight into Zoho.',
         'Built a PTO capacity and shrinkage dashboard in Google Apps Script, JavaScript and HTML.',
         'Built and shipped this 3D portfolio with AI-assisted development.',
       ],
@@ -174,11 +174,11 @@ export default {
     {
       title: 'Attendance Notification Automation',
       accent: '#f43f5e',
-      tagline: 'From Slack to Sheets to Assembled, with zero clicks.',
+      tagline: 'From Slack to Sheets, Assembled and Zoho, with zero clicks.',
       description:
-        'Attendance notifications used to be coded and plotted by hand, from Slack into Google Sheets and then into Assembled. This automation takes over the whole chain, so it now happens with no clicks at all.',
-      tags: ['Slack', 'Google Sheets', 'Assembled', 'Automation'],
-      stack: ['Google Apps Script', 'JavaScript', 'Slack webhooks', 'Assembled API'],
+        'Attendance notifications used to be coded and plotted by hand, from Slack into Google Sheets and then into Assembled. This automation takes over the whole chain, so it now happens with no clicks at all. I then extended it with an n8n workflow that also logs each absence directly in Zoho, so the record is created the moment the notification comes in.',
+      tags: ['Slack', 'Google Sheets', 'Assembled', 'Zoho', 'Automation'],
+      stack: ['n8n', 'Google Apps Script', 'JavaScript', 'Slack webhooks', 'Assembled API', 'Zoho'],
       links: [],
     },
     {
