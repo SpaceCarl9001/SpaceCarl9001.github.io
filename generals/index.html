@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Game of the Generals on a 10×10 field with barricades, air strikes, power-ups and hidden land mines.">
+<meta name="theme-color" content="#161911">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Generals">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Game of the Generals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Saira+Stencil+One&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;overscroll-behavior:none}
+[hidden]{display:none!important}
+.board{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+</style>
+<style>
+/* Layout: a field table. Olive campaign board on the left, the orders panel on the right; the panel drops under the board on phones. */
+:root{
+  color-scheme:dark;
+  --table:#161911; --table-hi:#20251a; --panel:#1f2319; --panel-2:#2a3022; --line:#3a4131;
+  --ink:#ece6cf; --muted:#a3a088; --brass:#d3a64b; --brass-hi:#f2d283; --brass-ink:#1c1a10;
+  --sq-a:#57623f; --sq-b:#4e5838; --frame:#2d3323;
+  --ivory:#efe7cd; --ivory-ink:#2b2a20; --onyx:#24272a; --onyx-ink:#ece6cf;
+  --red:#e2643f; --green:#a7ca66; --scrim:rgba(10,12,8,.74);
+  --f-display:"Saira Stencil One",Impact,"Arial Black",sans-serif;
+  --f-ui:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{background:radial-gradient(120% 80% at 30% 0%,var(--table-hi),var(--table) 60%) fixed,var(--table);color:var(--ink);font:16px/1.4 var(--f-ui);-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.shell{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:12px 32px;display:flex;flex-direction:column;gap:14px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
+.brand h1{font:400 clamp(22px,4.2vw,32px)/1 var(--f-display);letter-spacing:.02em;margin:0;color:var(--ink)}
+.brand .sub{font:500 12px var(--f-mono);color:var(--muted);letter-spacing:.04em}
+.status{display:flex;align-items:center;gap:8px;font-weight:600;font-size:17px;letter-spacing:.02em}
+.status .muted{color:var(--muted);font-weight:500}
+.chip{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+.chip.o0{background:var(--ivory)} .chip.o1{background:var(--onyx);border-color:#5c6153}
+.clock{font:500 15px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--brass-hi);padding:2px 8px;border:1px solid var(--line);border-radius:4px}
+.clock.low{color:var(--red);border-color:var(--red)}
+
+/* Main grid */
+.app{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+@media (min-width:860px){.app{grid-template-columns:auto 320px}}
+
+/* Board */
+.board{--lab:18px;--cell:min(56px,calc((100vw - 80px)/10));
+  display:grid;grid-template-columns:var(--lab) repeat(10,var(--cell));grid-template-rows:repeat(10,var(--cell)) var(--lab);
+  gap:1px;padding:8px;background:var(--frame);border:1px solid var(--line);border-radius:6px;width:max-content;max-width:100%;margin-inline:auto;
+  box-shadow:0 18px 40px -18px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.03)}
+@media (min-width:860px){.board{--cell:min(56px,calc((100vw - 32px - 16px - 320px - 64px)/10),calc((100vh - 120px)/10.4))}}
+.lab{display:grid;place-items:center;font:500 11px var(--f-mono);color:var(--muted)}
+.sq{position:relative;border:0;padding:0;margin:0;background:var(--sq-a);cursor:pointer;overflow:visible;display:block;width:100%;height:100%}
+.sq.b{background:var(--sq-b)}
+.sq.band{background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.09) 0 2px,transparent 2px 8px)}
+.sq:focus-visible{outline:2px solid var(--brass-hi);outline-offset:-2px;z-index:3}
+.sq.zone{box-shadow:inset 0 0 0 999px rgba(211,166,75,.14)}
+.sq.lf{box-shadow:inset 0 0 0 2px rgba(242,210,131,.35)}
+.sq.lt{box-shadow:inset 0 0 0 2px var(--brass)}
+.sq.can{box-shadow:inset 0 0 0 999px rgba(242,210,131,.10)}
+.sq.prev,.sq.hov{box-shadow:inset 0 0 0 999px rgba(242,210,131,.5)}
+.sq.atk{box-shadow:inset 0 0 0 3px var(--red)}
+.sq.tgt{cursor:crosshair}
+.sq.tgt .pc{outline:2px dashed var(--red);outline-offset:-1px}
+
+.mk{position:absolute;pointer-events:none}
+.mk.dot{inset:38%;border-radius:50%;background:var(--brass-hi);opacity:.85}
+.mk.aim{inset:4%;z-index:4;border:2px solid var(--red);border-radius:50%;
+  background:linear-gradient(var(--red),var(--red)) center/2px 100% no-repeat,linear-gradient(var(--red),var(--red)) center/100% 2px no-repeat}
+
+.pc{position:absolute;inset:9% 11%;border-radius:4px;display:flex;align-items:center;justify-content:center;z-index:2;
+  font:700 calc(var(--cell)*.32)/1 var(--f-ui);letter-spacing:.02em;
+  box-shadow:0 2px 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -2px 0 rgba(0,0,0,.12);transition:transform .12s}
+.pc.o0{background:linear-gradient(#f6efd8,var(--ivory));color:var(--ivory-ink)}
+.pc.o1{background:linear-gradient(#30343a,var(--onyx));color:var(--onyx-ink);box-shadow:0 2px 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12)}
+.pc.hid::after{content:"";width:26%;height:26%;border:1.5px solid currentColor;opacity:.3;transform:rotate(45deg)}
+.pc .stars{display:flex;flex-wrap:wrap;justify-content:center;max-width:78%;font-size:calc(var(--cell)*.2);line-height:1;letter-spacing:-.04em}
+.pc .flag{font-size:calc(var(--cell)*.42)}
+.pc.selp{outline:3px solid var(--brass-hi);outline-offset:1px;transform:translateY(-2px)}
+.pc.o0 .stars{color:#8a6a1e} .pc.o1 .stars{color:var(--brass-hi)}
+
+.bag{position:absolute;inset:7%;z-index:1;border-radius:7px;
+  background:repeating-linear-gradient(0deg,#9a8a62 0 5px,#7f7150 5px 6px),#8b7c57;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.35),0 2px 0 rgba(0,0,0,.35)}
+.bag.o0{border-bottom:3px solid var(--ivory)} .bag.o1{border-bottom:3px solid #0d0f10}
+.bag.jr{right:-1px;border-top-right-radius:0;border-bottom-right-radius:0}
+.bag.jl{left:-1px;border-top-left-radius:0;border-bottom-left-radius:0}
+.bag.ju{top:-1px;border-top-left-radius:0;border-top-right-radius:0}
+.bag.jd{bottom:-1px;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.crater{position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,#15130d 0 30%,rgba(40,30,18,.75) 55%,transparent 72%)}
+.mine{position:absolute;inset:30%;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(226,100,63,.35);z-index:1}
+.pu{position:absolute;top:2%;right:2%;width:38%;height:38%;z-index:3;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 35% 30%,var(--brass-hi),var(--brass) 60%,#8e6a22);box-shadow:0 0 0 1.5px #1a1a12,0 0 8px rgba(242,210,131,.55);
+  display:grid;place-items:center;color:var(--brass-ink);font:700 calc(var(--cell)*.2)/1 var(--f-ui)}
+.pu.pop{animation:puIn .35s ease-out}
+@keyframes puIn{from{transform:scale(0)}to{transform:scale(1)}}
+.fx{position:absolute;pointer-events:none;z-index:6}
+.fx.clash{inset:0;animation:clash .7s ease-out forwards}
+@keyframes clash{from{background:rgba(255,244,214,.95)}to{background:rgba(255,244,214,0)}}
+.fx.boom,.fx.strike{inset:-40%;border-radius:50%;animation:boom .9s ease-out forwards}
+.fx.boom{background:radial-gradient(circle,#ffe2a0 0,#e2643f 32%,rgba(226,100,63,0) 70%)}
+.fx.strike{background:radial-gradient(circle,#fff 0,#ffd27a 25%,#e2643f 45%,rgba(226,100,63,0) 72%)}
+@keyframes boom{from{transform:scale(.15);opacity:1}to{transform:scale(1.35);opacity:0}}
+
+/* Panel */
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.eyebrow{font:600 12px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+.sec p{margin:0;color:var(--muted);font-size:15px}
+.turn{font:400 24px/1.1 var(--f-display);letter-spacing:.02em}
+.turn.wait{color:var(--muted)}
+.counts{display:flex;gap:16px;font:500 13px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.counts b{color:var(--ink);font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 15px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:4px;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--brass)}
+.btn:focus-visible{outline:2px solid var(--brass-hi);outline-offset:2px}
+.btn.primary{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.btn.primary:hover:not(:disabled){background:var(--brass-hi)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.ghost{background:transparent}
+.skills{display:grid;gap:8px}
+.skill{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;text-align:left;padding:9px 12px;text-transform:none;letter-spacing:.02em;font-size:16px}
+.skill[aria-pressed="true"]{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.skill .ic{width:24px;height:24px;display:grid;place-items:center}
+.pips{display:flex;gap:4px}
+.pip{width:9px;height:9px;border-radius:2px;background:var(--brass)}
+.pip.used{background:transparent;border:1px solid var(--line)}
+.skill[aria-pressed="true"] .pip{background:var(--brass-ink)}
+.hint{font-size:15px;color:var(--ink);background:var(--panel-2);border-radius:4px;padding:8px 10px}
+.timer{font:400 56px/1 var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:.03em}
+.timer.low{color:var(--red)}
+.ready-list{display:grid;gap:4px;font-size:15px}
+.ready-list div{display:flex;align-items:center;gap:8px}
+.ready-list .ok{color:var(--green);font-weight:600}
+.ready-list .no{color:var(--muted)}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px 12px;font-size:14px;color:var(--muted)}
+.roster span b{display:inline-block;min-width:34px;color:var(--ink);font-weight:700}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;font-size:14.5px}
+.log li{display:grid;grid-template-columns:30px 1fr;gap:6px;color:var(--ink);min-width:0}
+.log li .n{font:500 11px/1.9 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.log li.priv .t::before{content:"Only you · ";color:var(--brass);font-weight:600}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:14px;color:var(--muted)}
+.legend div{display:flex;align-items:center;gap:8px}
+.lg{width:22px;height:22px;position:relative;border-radius:3px;background:var(--sq-a);flex:none;--cell:22px}
+.lg .pu,.lg .bag,.lg .crater{position:absolute}
+.lg.band{background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.18) 0 2px,transparent 2px 6px)}
+.fallen{display:flex;flex-wrap:wrap;gap:4px}
+.fallen span{font:600 12px var(--f-ui);padding:2px 6px;border-radius:3px;background:var(--panel-2);color:var(--muted);letter-spacing:.04em}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;z-index:20;background:var(--scrim);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px;padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(16px,env(safe-area-inset-bottom,0px))}
+.overlay.solid{background:var(--table);backdrop-filter:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;max-width:600px;width:100%;max-height:100%;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 60px -20px rgba(0,0,0,.8)}
+.card h2{font:400 clamp(30px,6vw,44px)/1 var(--f-display);margin:0;letter-spacing:.02em;text-wrap:balance}
+.card p{margin:0;color:var(--muted);max-width:60ch}
+.card .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.mode{display:flex;flex-direction:column;gap:4px;text-align:left;text-transform:none;letter-spacing:0;padding:14px 16px;line-height:1.3}
+.mode b{font:600 19px var(--f-ui);letter-spacing:.04em;text-transform:uppercase}
+.mode span{font-size:15px;color:var(--muted)}
+.mode.primary span{color:#3b321a}
+.rules{border-top:1px solid var(--line);padding-top:12px}
+.rules summary{cursor:pointer;font:600 14px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+.rules ul{margin:10px 0 0;padding-left:18px;display:grid;gap:7px;color:var(--ink);font-size:15.5px}
+.rules li b{color:var(--brass-hi);font-weight:600}
+.big-side{display:flex;align-items:center;gap:12px}
+.big-side .chip{width:28px;height:28px;border-radius:5px}
+
+/* Toasts */
+.toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;flex-direction:column;gap:8px;width:min(440px,calc(100vw - 32px));pointer-events:none}
+.toast{background:var(--panel-2);border:1px solid var(--line);border-left-width:4px;border-radius:5px;padding:10px 14px;font-size:16px;box-shadow:0 12px 30px -10px rgba(0,0,0,.8);animation:tIn .25s ease-out}
+.toast.good{border-left-color:var(--green)} .toast.bad{border-left-color:var(--red)} .toast.info{border-left-color:var(--brass)}
+@keyframes tIn{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="top">
+    <div class="brand"><h1>Game of the Generals</h1><span class="sub">10×10 · barricades · air strike · mines</span></div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <button class="btn ghost" id="menuBtn" type="button">Menu &amp; rules</button>
+  </header>
+  <main class="app">
+    <section><div class="board" id="board" role="grid" aria-label="Game board"></div></section>
+    <aside class="panel" id="panel"></aside>
+  </main>
+</div>
+<div class="overlay" id="overlay" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(function(){
+const N=10, COLS='ABCDEFGHIJ';
+const FLAG=0,PVT=1,SGT=2,G5=13,SPY=14;
+const NAMES=['Flag','Private','Sergeant','2nd Lieutenant','1st Lieutenant','Captain','Major','Lieutenant Colonel','Colonel','1-Star General','2-Star General','3-Star General','4-Star General','5-Star General','Spy'];
+const SHORT=['FLAG','PVT','SGT','2LT','1LT','CPT','MAJ','LTC','COL','1★','2★','3★','4★','5★','SPY'];
+const ARMY=[FLAG,PVT,PVT,PVT,PVT,PVT,PVT,2,3,4,5,6,7,8,9,10,11,12,13,SPY,SPY];
+const SIDE=['Ivory','Onyx'];
+const SETUP_SECS=90, MINES=2, POWERUPS=12;
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+const ATK=[0,.55,.3,.35,.4,.5,.6,.7,.8,.85,.9,.95,1,1,.9];
+
+const $=s=>document.querySelector(s);
+const key=(x,y)=>x+','+y;
+const sq=(x,y)=>COLS[x]+(y+1);
+const inB=(x,y)=>x>=0&&y>=0&&x<N&&y<N;
+const rnd=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const homeRows=o=>o===0?[0,1,2]:[7,8,9];
+const farRow=o=>o===0?N-1:0;
+const isGeneral=r=>r>=9&&r<=13;
+const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+
+let S;
+function freshState(mode){
+  return {mode,phase:'menu',pieces:[],bars:[],mines:[],craters:[],powerups:[],turn:0,
+    skills:[{h:2,v:2,air:1},{h:2,v:2,air:1}],barUsed:false,tool:'move',selected:null,preview:null,
+    log:[],pending:[[],[]],flagPending:null,winner:null,reason:'',setupPlayer:0,ready:[false,false],
+    timeLeft:SETUP_SECS,timer:null,moves:0,last:null,fx:[],puFresh:false,safe:new Set(),nextId:1,
+    busy:false,fallen:[[],[]],handoff:null};
+}
+
+/* ---------- board queries ---------- */
+const pieceAt=(x,y)=>S.pieces.find(p=>p.alive&&p.x===x&&p.y===y);
+const getPiece=id=>S.pieces.find(p=>p.id===id);
+function barAt(x,y){for(const b of S.bars){const i=b.cells.findIndex(c=>c.x===x&&c.y===y);if(i>=0)return{b,i}}return null}
+const mineAt=(x,y)=>S.mines.findIndex(m=>m.x===x&&m.y===y);
+const puAt=(x,y)=>S.powerups.findIndex(u=>u.x===x&&u.y===y);
+const flagOf=o=>S.pieces.find(p=>p.alive&&p.owner===o&&p.rank===FLAG);
+const alive=o=>S.pieces.filter(p=>p.alive&&p.owner===o);
+
+function legalMoves(p){
+  if(!p||!p.alive)return[];
+  const out=[];
+  for(const[dx,dy]of DIRS){
+    const x=p.x+dx,y=p.y+dy;
+    if(!inB(x,y)||barAt(x,y))continue;
+    const q=pieceAt(x,y);
+    if(q&&q.owner===p.owner)continue;
+    out.push({x,y,attack:!!q});
+  }
+  return out;
+}
+function hasAction(o){return S.skills[o].air>0&&alive(1-o).length>0||alive(o).some(p=>legalMoves(p).length)}
+
+/* ---------- setup ---------- */
+function addPiece(owner,rank,x,y){S.pieces.push({id:S.nextId++,owner,rank,x,y,alive:true,moved:false})}
+function formation(owner){
+  S.pieces=S.pieces.filter(p=>p.owner!==owner);
+  const back=owner===0?0:N-1, front=owner===0?1:-1;
+  const fx=1+rnd(N-2);
+  const guard={x:fx,y:back+front};
+  const cells=[];
+  homeRows(owner).forEach(y=>{for(let x=0;x<N;x++)if(!(x===fx&&y===back)&&!(x===guard.x&&y===guard.y))cells.push({x,y})});
+  const spots=[guard,...shuffle(cells).slice(0,ARMY.length-2)];
+  addPiece(owner,FLAG,fx,back);
+  shuffle(ARMY.slice(1)).forEach((r,i)=>addPiece(owner,r,spots[i].x,spots[i].y));
+}
+
+function beginSetup(p){
+  S.phase='setup';S.setupPlayer=p;S.timeLeft=SETUP_SECS;S.preview=null;S.handoff=null;
+  clearInterval(S.timer);
+  S.timer=setInterval(()=>{
+    if(S.phase!=='setup')return clearInterval(S.timer);
+    S.timeLeft--;
+    if(S.timeLeft<=0){toast(`Time is up. ${SIDE[p]}'s formation is locked in.`,'info');markReady(p);return}
+    tickClock();
+  },1000);
+  render();
+}
+function tickClock(){
+  const low=S.timeLeft<=15;
+  const t=$('#timer');if(t){t.textContent=fmt(S.timeLeft);t.classList.toggle('low',low)}
+  const h=$('#hdrClock');if(h){h.textContent=fmt(S.timeLeft);h.classList.toggle('low',low)}
+}
+function markReady(p){
+  clearInterval(S.timer);S.ready[p]=true;S.preview=null;
+  if(S.ready[0]&&S.ready[1])return startPlay();
+  showHandoff(1-p,'setup');
+}
+function setupClick(x,y){
+  const v=viewer();
+  if(S.ready[v])return;
+  if(!homeRows(v).includes(y)){S.preview=null;render();return}
+  if(!S.preview){if(pieceAt(x,y))S.preview={x,y}}
+  else if(S.preview.x===x&&S.preview.y===y)S.preview=null;
+  else{
+    const a=pieceAt(S.preview.x,S.preview.y),b=pieceAt(x,y);
+    if(a){a.x=x;a.y=y}
+    if(b){b.x=S.preview.x;b.y=S.preview.y}
+    S.preview=null;
+  }
+  render();
+}
+
+function startPlay(){
+  S.phase='play';S.turn=0;S.moves=0;S.preview=null;
+  S.pieces.forEach(p=>S.safe.add(key(p.x,p.y)));
+  const band=[];for(let y=3;y<=6;y++)for(let x=0;x<N;x++)band.push({x,y});
+  S.mines=shuffle(band).slice(0,MINES);
+  spawnPowerups(POWERUPS);
+  log('Both armies are deployed. Two land mines lie hidden somewhere in rows 4 to 7.');
+  log(`${SIDE[0]} moves first.`);
+  if(S.mode==='local')showHandoff(0,'play');
+  else{closeOverlay();render();toast('Battle begins. You move first.','info')}
+}
+
+/* ---------- power-ups ---------- */
+function spawnPowerups(n){
+  // Power-ups can sit on pieces and on hidden mines (excluding mines would leak their position); never on barricades.
+  const free=[];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!barAt(x,y))free.push({x,y});
+  S.powerups=shuffle(free).slice(0,n);
+  S.puFresh=true;
+}
+function promote(w,loserRank,at){
+  const old=w.rank;
+  if(old===G5||old===SPY||old===FLAG){
+    log(`The power-up at ${at} was used up.`);
+    notify(w.owner,`Your ${NAMES[old]} triggered the power-up at ${at}, but it cannot rank up. The power-up is gone.`,'info');
+    return;
+  }
+  let nr;
+  if(old===PVT&&loserRank===SPY){
+    const pool=S.pieces.filter(p=>p.alive&&p!==w&&p.rank>=SGT&&p.rank<=G5).map(p=>p.rank);
+    nr=pool.length?pool[rnd(pool.length)]:SGT;
+  }else nr=old+1;
+  w.rank=nr;
+  log(`A power-up was activated at ${at}.`);
+  notify(w.owner,`Power-up! Your ${NAMES[old]} at ${at} was promoted to ${NAMES[nr]}.`,'good');
+}
+
+/* ---------- actions ---------- */
+function battle(a,d){
+  if(d===FLAG)return'a';
+  if(a===FLAG)return'd';
+  if(a===d)return'both';
+  if(a===SPY)return d===PVT?'d':'a';
+  if(d===SPY)return a===PVT?'a':'d';
+  return a>d?'a':'d';
+}
+function kill(p){p.alive=false;S.fallen[p.owner].push(p.rank)}
+
+function doMove(p,x,y){
+  const owner=p.owner,foe=1-owner,at=sq(x,y);
+  S.last={from:{x:p.x,y:p.y},to:{x,y}};
+  p.moved=true;
+  const d=pieceAt(x,y);
+  if(d)return resolveBattle(p,d,x,y);
+  const mi=mineAt(x,y);
+  if(mi>=0){
+    S.mines.splice(mi,1);S.craters.push({x,y});kill(p);fx(x,y,'boom');
+    log(`A land mine exploded at ${at}. ${SIDE[owner]} lost a piece.`);
+    notify(owner,`Your ${NAMES[p.rank]} stepped on a land mine at ${at}.`,'bad');
+    notify(foe,`A land mine destroyed an enemy piece at ${at}.`,'good');
+    if(p.rank===FLAG)finish(foe,`${SIDE[owner]}'s flag was destroyed by a land mine.`);
+    return;
+  }
+  p.x=x;p.y=y;S.safe.add(key(x,y));
+  if(p.rank===FLAG&&y===farRow(owner))flagArrived(p);
+}
+
+function resolveBattle(a,d,x,y){
+  const A=a.owner,D=d.owner,at=sq(x,y),ar=a.rank,dr=d.rank;
+  const out=battle(ar,dr);
+  fx(x,y,'clash');
+  let winner=null,loserRank=null;
+  if(out==='a'){kill(d);a.x=x;a.y=y;S.safe.add(key(x,y));winner=a;loserRank=dr}
+  else if(out==='d'){kill(a);winner=d;loserRank=ar}
+  else{kill(a);kill(d)}
+  log(`${SIDE[A]} attacked ${at}. `+(out==='a'?`${SIDE[A]} won.`:out==='d'?`${SIDE[D]} held the square.`:'Both pieces were eliminated.'));
+  if(out==='a'){
+    notify(A,`Victory at ${at}. Your ${NAMES[ar]} won the attack.`,'good');
+    notify(D,`Defeat at ${at}. Your ${NAMES[dr]} was eliminated.`,'bad');
+  }else if(out==='d'){
+    notify(A,`Defeat at ${at}. Your ${NAMES[ar]} lost the attack.`,'bad');
+    notify(D,`Your ${NAMES[dr]} at ${at} was attacked and won.`,'good');
+  }else{
+    notify(A,`Both eliminated at ${at}. Your ${NAMES[ar]} fell with the enemy piece.`,'info');
+    notify(D,`Both eliminated at ${at}. Your ${NAMES[dr]} fell with the attacker.`,'info');
+  }
+  if(dr===FLAG&&out==='a')return finish(A,`${SIDE[A]} captured the enemy flag at ${at}.`);
+  if(ar===FLAG&&out==='d')return finish(D,`${SIDE[A]}'s flag attacked and was captured at ${at}.`);
+  const ui=puAt(x,y);
+  if(ui>=0){
+    S.powerups.splice(ui,1);
+    if(!winner)log(`The power-up at ${at} was destroyed in the battle.`);
+    else promote(winner,loserRank,at);
+  }
+  if(winner&&winner.rank===FLAG&&winner.y===farRow(winner.owner)&&out==='a')flagArrived(winner);
+}
+
+function flagArrived(p){
+  if(S.phase!=='play')return;
+  const threatened=DIRS.some(([dx,dy])=>{const q=pieceAt(p.x+dx,p.y+dy);return q&&q.owner!==p.owner});
+  if(!threatened)return finish(p.owner,`${SIDE[p.owner]}'s flag reached the enemy's back row.`);
+  S.flagPending={owner:p.owner};
+  log(`${SIDE[p.owner]}'s flag reached the back row next to an enemy piece. It must survive one turn to win.`);
+}
+
+function barCells(ax,ay,tool,v){
+  const dx=tool==='barH'?(v===1?-1:1):0, dy=tool==='barV'?(v===1?1:-1):0;
+  return[{x:ax,y:ay},{x:ax+dx,y:ay+dy}];
+}
+const validBar=cells=>cells.every(c=>inB(c.x,c.y)&&!pieceAt(c.x,c.y)&&!barAt(c.x,c.y));
+
+function placeBarricade(owner,cells,tool){
+  S.skills[owner][tool==='barH'?'h':'v']--;S.barUsed=true;
+  const kept=[],blown=[];
+  cells.forEach(c=>{const mi=mineAt(c.x,c.y);if(mi>=0){S.mines.splice(mi,1);S.craters.push(c);blown.push(c);fx(c.x,c.y,'boom')}else kept.push(c)});
+  if(kept.length)S.bars.push({owner,cells:kept});
+  kept.forEach(c=>{
+    const ui=puAt(c.x,c.y);if(ui<0)return;
+    const free=[];for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(!barAt(x,y)&&puAt(x,y)<0)free.push({x,y});
+    if(free.length)S.powerups[ui]=free[rnd(free.length)];else S.powerups.splice(ui,1);
+  });
+  log(`${SIDE[owner]} built a ${tool==='barH'?'horizontal':'vertical'} barricade at ${cells.map(c=>sq(c.x,c.y)).join('–')}.`);
+  if(blown.length)log(`A hidden land mine went off under it at ${blown.map(c=>sq(c.x,c.y)).join(' and ')}. ${blown.length===2?'The whole barricade was destroyed.':'Half of the barricade was destroyed.'}`);
+  if(blown.length)notify(owner,`Your barricade set off a land mine. ${blown.length===2?'Nothing':'One square'} of it remains.`,'bad');
+}
+
+function airStrike(owner,t){
+  const at=sq(t.x,t.y);
+  S.skills[owner].air--;kill(t);fx(t.x,t.y,'strike');S.last={from:null,to:{x:t.x,y:t.y}};
+  log(`${SIDE[owner]} called an air strike on ${at}. An enemy piece was destroyed.`);
+  notify(owner,`Air strike hit ${at}. One enemy piece destroyed.`,'good');
+  notify(t.owner,`Your ${NAMES[t.rank]} at ${at} was destroyed by an air strike.`,'bad');
+  if(t.rank===FLAG)finish(owner,`${SIDE[owner]}'s air strike hit the flag at ${at}.`);
+}
+
+function endTurn(){
+  if(S.phase!=='play'){render();return}
+  S.moves++;
+  spawnPowerups(S.powerups.length);
+  S.selected=null;S.tool='move';S.preview=null;S.barUsed=false;
+  S.turn=1-S.turn;
+  const t=S.turn;
+  if(S.flagPending&&S.flagPending.owner===t){
+    const f=flagOf(t);
+    if(f&&f.y===farRow(t))return finish(t,`${SIDE[t]}'s flag held the enemy's back row for a full turn.`);
+    S.flagPending=null;
+  }
+  if(!hasAction(t))return finish(1-t,`${SIDE[t]} has no legal moves left.`);
+  if(S.mode==='local'){showHandoff(t,'play');return}
+  render();
+  if(t===1){S.busy=true;renderStatus();renderPanel();setTimeout(aiTurn,700+rnd(500))}
+}
+
+function finish(w,reason){
+  S.phase='over';S.winner=w;S.reason=reason;S.tool='move';S.selected=null;S.preview=null;S.busy=false;S.handoff=null;
+  clearInterval(S.timer);
+  log(reason);
+  closeOverlay();render();
+  setTimeout(showOver,1000);
+}
+
+/* ---------- computer opponent (knows only what a player could know) ---------- */
+function aiTurn(){
+  S.busy=false;
+  if(S.phase!=='play'||S.turn!==1)return;
+  const me=1;
+  aiMaybeBarricade(me);
+  const t=aiPickStrike(me);
+  if(t){airStrike(me,t);endTurn();return}
+  const mv=aiPickMove(me);
+  if(mv){doMove(mv.p,mv.x,mv.y);endTurn();return}
+  finish(0,`${SIDE[1]} has no legal moves left.`);
+}
+function aiMaybeBarricade(me){
+  const sk=S.skills[me];if(!sk.h&&!sk.v)return;
+  const f=flagOf(me),foes=alive(1-me);if(!f)return;
+  const near=foes.some(e=>dist(e,f)<=4);
+  if(Math.random()>(near?.45:S.moves<6?.25:.04))return;
+  const fwd=me===1?-1:1,cand=[];
+  const tools=[];if(sk.h)tools.push('barH');if(sk.v)tools.push('barV');
+  for(const tool of tools)for(let dx=-3;dx<=3;dx++)for(let dy=1;dy<=3;dy++){
+    const cells=barCells(f.x+dx,f.y+fwd*dy,tool,0);
+    if(!validBar(cells))continue;
+    const closest=foes.length?Math.min(...foes.map(e=>Math.min(dist(e,cells[0]),dist(e,cells[1])))):5;
+    cand.push({cells,tool,s:-closest*.4-Math.abs(dx)*.2+Math.random()});
+  }
+  if(!cand.length)return;
+  cand.sort((a,b)=>b.s-a.s);
+  placeBarricade(me,cand[0].cells,cand[0].tool);
+}
+function aiPickStrike(me){
+  if(!S.skills[me].air)return null;
+  const f=flagOf(me),foes=alive(1-me);if(!f||!foes.length)return null;
+  const threats=foes.filter(e=>dist(e,f)<=2).sort((a,b)=>dist(a,f)-dist(b,f));
+  if(threats.length){const d=dist(threats[0],f);if(d===1&&Math.random()<.85||d===2&&Math.random()<.35)return threats[0]}
+  const deep=foes.filter(e=>Math.abs(e.y-farRow(e.owner))<=1);
+  if(deep.length&&Math.random()<.3)return deep[rnd(deep.length)];
+  if(S.moves>30){const still=foes.filter(e=>!e.moved);if(still.length&&still.length<=3&&Math.random()<.2)return still[rnd(still.length)]}
+  return null;
+}
+function aiPickMove(me){
+  const f=flagOf(me),foes=alive(1-me),fwd=me===1?-1:1;
+  const threatened=f?foes.filter(e=>dist(e,f)===1):[];
+  let best=null;
+  for(const p of alive(me))for(const m of legalMoves(p)){
+    let s=Math.random()*.6;
+    const tgt=m.attack?pieceAt(m.x,m.y):null;
+    const adv=(m.y-p.y)*fwd;
+    if(p.rank===FLAG){
+      if(threatened.length&&!m.attack)s+=foes.some(e=>dist(e,m)===1)?-1:3;
+      else s-=m.attack?4:3;
+      if(m.y===farRow(me)&&!foes.some(e=>dist(e,m)===1))s+=10;
+    }else if(tgt){
+      s+=ATK[p.rank]*1.4;
+      if(!tgt.moved)s+=.2;
+      if(puAt(m.x,m.y)>=0)s+=.35;
+      if(threatened.includes(tgt))s+=3;
+    }else{
+      s+=adv*.35;
+      if(m.y>=3&&m.y<=6&&!S.safe.has(key(m.x,m.y)))s-=.3;
+      if(f&&dist(p,f)===1&&dist(m,f)>1)s-=.35;
+      if(p.rank>=11&&p.rank<=13)s-=.1;
+    }
+    if(!best||s>best.s)best={p,x:m.x,y:m.y,s};
+  }
+  return best;
+}
+
+/* ---------- messaging ---------- */
+function log(text,vis='all'){S.log.push({text,vis,n:S.moves+1})}
+function notify(owner,text,kind){
+  log(text,owner);
+  if(S.mode==='ai'){if(owner===0)toast(text,kind);return}
+  if(owner===S.turn)toast(text,kind);else S.pending[owner].push({text,kind});
+}
+function toast(text,kind='info'){
+  const el=document.createElement('div');el.className='toast '+kind;el.textContent=text;
+  const box=$('#toasts');box.appendChild(el);
+  while(box.children.length>4)box.firstChild.remove();
+  setTimeout(()=>el.remove(),4200);
+}
+function fx(x,y,type){S.fx.push({x,y,type})}
+
+/* ---------- view ---------- */
+function viewer(){if(S.mode==='local')return S.phase==='setup'?S.setupPlayer:S.phase==='over'?0:S.turn;return 0}
+function toBoard(r,c,v){return v===1?{x:N-1-c,y:r}:{x:c,y:N-1-r}}
+function toScreen(x,y,v){return v===1?{r:y,c:N-1-x}:{r:N-1-y,c:x}}
+function isHumanTurn(){return S.phase==='play'&&!S.busy&&!S.handoff&&(S.mode==='local'||S.turn===0)}
+function face(rank){
+  if(isGeneral(rank))return`<span class="stars">${'★'.repeat(rank-8)}</span>`;
+  if(rank===FLAG)return'<span class="flag">⚑&#xFE0E;</span>';
+  return SHORT[rank];
+}
+
+function render(){renderStatus();renderBoard();renderPanel();save()}
+
+/* ---------- save & resume (a phone may close the app mid-game) ---------- */
+const SAVE_KEY='gotg-save-v1';
+function save(){
+  try{
+    if(S.phase==='play')localStorage.setItem(SAVE_KEY,JSON.stringify({...S,safe:[...S.safe],timer:null,fx:[]}));
+    else if(S.phase==='over')localStorage.removeItem(SAVE_KEY);
+  }catch(e){}
+}
+function loadSave(){
+  try{
+    const o=JSON.parse(localStorage.getItem(SAVE_KEY));
+    if(!o||o.phase!=='play')return null;
+    o.safe=new Set(o.safe);o.busy=false;o.fx=[];
+    return o;
+  }catch(e){return null}
+}
+function resumeSaved(){
+  const o=loadSave();if(!o)return;
+  if(S)clearInterval(S.timer);
+  S=o;closeOverlay();
+  if(S.handoff)showHandoff(S.handoff.p,S.handoff.kind);
+  else render();
+  if(S.mode==='ai'&&S.turn===1){S.busy=true;renderStatus();renderPanel();setTimeout(aiTurn,600)}
+}
+
+function renderStatus(){
+  const st=$('#status');
+  if(S.phase==='menu')st.innerHTML='<span class="muted">Choose a mode to begin</span>';
+  else if(S.phase==='setup')st.innerHTML=`<span class="chip o${S.setupPlayer}"></span>${SIDE[S.setupPlayer]} deploying <span class="clock${S.timeLeft<=15?' low':''}" id="hdrClock">${fmt(S.timeLeft)}</span>`;
+  else if(S.phase==='play')st.innerHTML=`<span class="chip o${S.turn}"></span>${S.mode==='ai'?(S.turn===0?'Your move':`${SIDE[1]} is thinking`):`${SIDE[S.turn]} to move`} <span class="muted">· Turn ${S.moves+1}</span>`;
+  else st.innerHTML=`<span class="chip o${S.winner}"></span>${S.mode==='ai'?(S.winner===0?'Victory':'Defeat'):SIDE[S.winner]+' wins'}`;
+}
+
+function renderBoard(){
+  const v=viewer(),el=$('#board'),reveal=S.phase==='over';
+  const sel=S.selected?getPiece(S.selected):null;
+  const moves=new Map((sel?legalMoves(sel):[]).map(m=>[key(m.x,m.y),m]));
+  const human=isHumanTurn(),me=S.turn;
+  const barMode=human&&(S.tool==='barH'||S.tool==='barV'),airMode=human&&S.tool==='air';
+  const prev=barMode&&S.preview?barCells(S.preview.x,S.preview.y,S.tool,v):[];
+  const fxMap=new Map(S.fx.map(f=>[key(f.x,f.y),f.type]));S.fx=[];
+  const pop=S.puFresh;S.puFresh=false;
+  const showPU=S.phase==='play'||S.phase==='over';
+  let h='';
+  for(let r=0;r<N;r++){
+    h+=`<div class="lab">${v===1?r+1:N-r}</div>`;
+    for(let c=0;c<N;c++){
+      const{x,y}=toBoard(r,c,v),k=key(x,y);
+      const cls=['sq',(x+y)%2?'a':'b'];
+      if(y>=3&&y<=6)cls.push('band');
+      if(S.phase==='setup'&&homeRows(v).includes(y))cls.push('zone');
+      if(S.last&&S.phase!=='setup'&&S.phase!=='menu'){
+        if(S.last.from&&S.last.from.x===x&&S.last.from.y===y)cls.push('lf');
+        if(S.last.to.x===x&&S.last.to.y===y)cls.push('lt');
+      }
+      const m=moves.get(k);if(m)cls.push(m.attack?'atk':'mv');
+      if(barMode&&validBar(barCells(x,y,S.tool,v)))cls.push('can');
+      if(prev.some(q=>q.x===x&&q.y===y))cls.push('prev');
+      let p=pieceAt(x,y);
+      if(p&&S.phase==='setup'&&p.owner!==v)p=null;
+      if(airMode&&p&&p.owner!==me)cls.push('tgt');
+      let inner='';
+      const bc=barAt(x,y);
+      if(bc){
+        const other=bc.b.cells[1-bc.i];let j='';
+        if(other){const a=toScreen(x,y,v),b=toScreen(other.x,other.y,v);j=b.c>a.c?'jr':b.c<a.c?'jl':b.r<a.r?'ju':'jd'}
+        inner+=`<span class="bag o${bc.b.owner} ${j}"></span>`;
+      }
+      if(S.craters.some(q=>q.x===x&&q.y===y))inner+='<span class="crater"></span>';
+      if(reveal&&mineAt(x,y)>=0)inner+='<span class="mine" title="Unexploded land mine"></span>';
+      let label=sq(x,y);
+      if(p){
+        const show=p.owner===v||reveal;
+        const selp=(sel&&sel.id===p.id)||(S.phase==='setup'&&S.preview&&S.preview.x===x&&S.preview.y===y);
+        inner+=`<span class="pc o${p.owner}${show?'':' hid'}${selp?' selp':''}">${show?face(p.rank):''}</span>`;
+        label+=show?` ${SIDE[p.owner]} ${NAMES[p.rank]}`:` ${SIDE[p.owner]} piece, rank hidden`;
+      }
+      if(showPU&&puAt(x,y)>=0){inner+=`<span class="pu${pop?' pop':''}">▲</span>`;label+=', power-up'}
+      if(bc)label+=', barricade';
+      if(m&&!m.attack)inner+='<span class="mk dot"></span>';
+      if(airMode&&S.preview&&S.preview.x===x&&S.preview.y===y)inner+='<span class="mk aim"></span>';
+      if(fxMap.has(k))inner+=`<span class="fx ${fxMap.get(k)}"></span>`;
+      h+=`<button type="button" class="${cls.join(' ')}" data-x="${x}" data-y="${y}" aria-label="${label}">${inner}</button>`;
+    }
+  }
+  h+='<div class="lab"></div>';
+  for(let c=0;c<N;c++)h+=`<div class="lab">${COLS[v===1?N-1-c:c]}</div>`;
+  el.innerHTML=h;
+}
+
+function pips(n,max){let s='<span class="pips">';for(let i=0;i<max;i++)s+=`<span class="pip${i<n?'':' used'}"></span>`;return s+'</span>'}
+
+function renderPanel(){
+  const el=$('#panel'),v=viewer();
+  if(S.phase==='menu'){
+    el.innerHTML=`<div class="sec"><div class="eyebrow">Sample position</div><p>Both armies are deployed on a 10×10 field. Your ranks are visible; the enemy's stay hidden until the battle ends. Open the menu to start a game.</p><button class="btn primary" data-act="menu" type="button">Start a game</button></div>`;
+    return;
+  }
+  if(S.phase==='setup'){
+    const counts={};ARMY.forEach(r=>counts[r]=(counts[r]||0)+1);
+    const roster=[13,12,11,10,9,8,7,6,5,4,3,2,1,14,0].map(r=>`<span><b>${counts[r]>1?counts[r]+'× ':''}${SHORT[r]}</b>${NAMES[r]}</span>`).join('');
+    const other=1-v;
+    el.innerHTML=`
+      <div class="sec">
+        <div class="eyebrow">Deployment · ${SIDE[v]}</div>
+        <div class="timer${S.timeLeft<=15?' low':''}" id="timer">${fmt(S.timeLeft)}</div>
+        <p>Tap one of your pieces, then tap another square in your first three rows to swap or move it. The game starts when both sides are ready or the clock runs out.</p>
+        <div class="row"><button class="btn" data-act="shuffle" type="button">Shuffle formation</button><button class="btn primary" data-act="ready" type="button">Ready</button></div>
+        <div class="ready-list">
+          <div><span class="chip o${v}"></span>${SIDE[v]}<span class="no">Deploying</span></div>
+          <div><span class="chip o${other}"></span>${SIDE[other]}${S.ready[other]?`<span class="ok">Ready</span>`:'<span class="no">Waiting for their turn to deploy</span>'}</div>
+        </div>
+      </div>
+      <div class="sec"><div class="eyebrow">Your army · 21 pieces</div><div class="roster">${roster}</div></div>`;
+    return;
+  }
+  const me=S.mode==='ai'?0:(S.phase==='over'?0:S.turn);
+  const sk=S.skills[me],human=isHumanTurn();
+  const canBar=human&&!S.barUsed;
+  let turnTxt,turnCls='turn';
+  if(S.phase==='over'){turnTxt=S.mode==='ai'?(S.winner===0?'Victory':'Defeat'):`${SIDE[S.winner]} wins`}
+  else if(S.mode==='ai'&&S.turn===1){turnTxt=`${SIDE[1]} is moving…`;turnCls+=' wait'}
+  else turnTxt=S.mode==='ai'?'Your orders':`${SIDE[S.turn]}'s orders`;
+  let hint;
+  if(S.phase==='over')hint=S.reason+' All ranks and any unexploded mines are now shown.';
+  else if(!human)hint='Wait for the enemy to finish their turn.';
+  else if(S.tool==='barH'||S.tool==='barV')hint=`Tap a highlighted square to preview, then tap it again to build. The barricade covers that square and the one ${S.tool==='barH'?'to its right':'below it'}. You still move afterwards.`;
+  else if(S.tool==='air')hint='Tap an enemy piece to aim, then tap it again to fire. The strike ends your turn.';
+  else if(S.barUsed)hint='Barricade built. Now move one piece to end your turn.';
+  else hint='Select one of your pieces, then a highlighted square. Build a barricade first if you want one this turn.';
+  const fallen=S.fallen[me].slice().sort((a,b)=>b-a);
+  const vis=S.phase==='over'?null:me;
+  const entries=S.log.filter(e=>e.vis==='all'||vis===null||e.vis===vis).slice(-80).reverse();
+  el.innerHTML=`
+    <div class="sec">
+      <div class="${turnCls}">${turnTxt}</div>
+      <div class="counts"><span>Your pieces <b>${alive(me).length}</b></span><span>Enemy pieces <b>${alive(1-me).length}</b></span><span>Power-ups <b>${S.powerups.length}</b></span></div>
+    </div>
+    <div class="sec">
+      <div class="eyebrow">Special orders</div>
+      <div class="skills">
+        <button class="btn skill" type="button" data-act="barH" aria-pressed="${S.tool==='barH'}" ${canBar&&sk.h?'':'disabled'}>
+          <span class="ic"><svg width="24" height="12" viewBox="0 0 24 12"><rect x="1" y="1" width="22" height="10" rx="3" fill="currentColor" opacity=".85"/></svg></span>Barricade, horizontal ${pips(sk.h,2)}</button>
+        <button class="btn skill" type="button" data-act="barV" aria-pressed="${S.tool==='barV'}" ${canBar&&sk.v?'':'disabled'}>
+          <span class="ic"><svg width="12" height="24" viewBox="0 0 12 24"><rect x="1" y="1" width="10" height="22" rx="3" fill="currentColor" opacity=".85"/></svg></span>Barricade, vertical ${pips(sk.v,2)}</button>
+        <button class="btn skill" type="button" data-act="air" aria-pressed="${S.tool==='air'}" ${human&&sk.air?'':'disabled'}>
+          <span class="ic"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M11 1v6M11 15v6M1 11h6M15 11h6"/></svg></span>Air strike ${pips(sk.air,1)}</button>
+      </div>
+      <div class="hint">${hint}</div>
+      ${S.tool!=='move'&&human?'<button class="btn" type="button" data-act="cancel">Cancel order</button>':''}
+    </div>
+    <div class="sec">
+      <div class="eyebrow">Field log</div>
+      <ol class="log">${entries.map(e=>`<li class="${e.vis==='all'?'':'priv'}"><span class="n">T${e.n}</span><span class="t">${e.text}</span></li>`).join('')||'<li><span class="n"></span><span class="t">No action yet.</span></li>'}</ol>
+    </div>
+    <div class="sec">
+      <div class="eyebrow">Map key</div>
+      <div class="legend">
+        <div><span class="lg"><span class="pu">▲</span></span>Power-up, moves every turn</div>
+        <div><span class="lg"><span class="bag o0" style="inset:3px"></span></span>Barricade, blocks all pieces</div>
+        <div><span class="lg band"></span>Rows 4–7, mines hidden here</div>
+        <div><span class="lg"><span class="crater"></span></span>Exploded mine, now safe</div>
+      </div>
+      ${fallen.length?`<div class="eyebrow">Your fallen</div><div class="fallen">${fallen.map(r=>`<span title="${NAMES[r]}">${SHORT[r]}</span>`).join('')}</div>`:''}
+    </div>`;
+}
+
+/* ---------- overlays ---------- */
+function overlay(html,solid){const o=$('#overlay');o.classList.toggle('solid',!!solid);$('#card').innerHTML=html;o.hidden=false;const f=o.querySelector('[data-focus]');if(f)f.focus()}
+function closeOverlay(){$('#overlay').hidden=true}
+
+const RULES=`<details class="rules"${'%OPEN%'}><summary>Rules of engagement</summary><ul>
+  <li><b>Ranks</b>, high to low: 5★ to 1★ General, Colonel, Lt Colonel, Major, Captain, 1st Lt, 2nd Lt, Sergeant, Private, Flag. The <b>Spy</b> beats every rank from Sergeant up but loses to a Private. Equal ranks eliminate each other. Any piece captures a Flag.</li>
+  <li><b>Moving</b>: one piece, one square forward, back or sideways per turn. Moving onto an enemy starts a battle. Neither side sees ranks; you only learn if you won or lost.</li>
+  <li><b>Winning</b>: capture the enemy flag, or bring your own flag to the enemy's back row. If an enemy piece is next to it when it arrives, it must survive one more turn.</li>
+  <li><b>Deployment</b>: 90 seconds to arrange your 21 pieces in your first three rows.</li>
+  <li><b>Barricades</b>: each side has 2 horizontal and 2 vertical, two squares each, permanent. One per turn, built before you move. Building one does not use up your move.</li>
+  <li><b>Air strike</b>: once per game, destroys any enemy piece and ends your turn. Hitting the flag wins the game.</li>
+  <li><b>Power-ups</b> (12): they jump to new squares after every turn. A battle on one promotes the winner one rank, then it is gone. A 5★ General or a Spy only uses it up. If both pieces fall, it is lost. A Private that beats a Spy on one becomes a random officer rank still on the board.</li>
+  <li><b>Land mines</b> (2): hidden between rows 4 and 7 and never move. A piece that steps on one is destroyed. A barricade built on one sets it off and loses that square.</li>
+</ul></details>`;
+
+function showMenu(){
+  const inGame=S.phase==='setup'||S.phase==='play';
+  overlay(`<div class="eyebrow">Salpakan, field edition</div>
+    <h2>Game of the Generals</h2>
+    <p>Two hidden armies on a 10×10 field with barricades, an air strike, roaming power-ups and two buried mines.</p>
+    <div class="modes">
+      <button class="btn mode primary" type="button" data-act="ai" data-focus><b>Play the computer</b><span>You command Ivory. Onyx deploys instantly.</span></button>
+      <button class="btn mode" type="button" data-act="local"><b>Pass and play</b><span>Two players on one device, with a hand-off screen between turns.</span></button>
+    </div>
+    ${inGame?'<div class="row"><button class="btn" type="button" data-act="resume">Resume current game</button></div>':S.phase==='menu'&&loadSave()?'<div class="row"><button class="btn" type="button" data-act="restore">Resume saved game</button></div>':''}
+    ${RULES.replace('%OPEN%',inGame?' open':'')}`);
+}
+function showHandoff(p,kind){
+  S.handoff={p,kind};S.selected=null;S.tool='move';S.preview=null;
+  if(kind==='setup'){S.phase='setup';S.setupPlayer=p}
+  render();
+  const n=S.pending[p].length;
+  overlay(`<div class="eyebrow">Pass the device</div>
+    <div class="big-side"><span class="chip o${p}"></span><h2>${SIDE[p]} ${kind==='setup'?'deploys':'to move'}</h2></div>
+    <p>${kind==='setup'?`Keep the screen away from your opponent. Your 90-second deployment clock starts when you tap below.`:`Hand the device to ${SIDE[p]} and make sure ${SIDE[1-p]} is not looking.${n?` You have ${n} new report${n>1?'s':''} from the last turn.`:''}`}</p>
+    <div class="row"><button class="btn primary" type="button" data-act="handoff" data-focus>${kind==='setup'?`Start ${SIDE[p]}'s deployment`:`Show ${SIDE[p]}'s board`}</button></div>`,true);
+}
+function showOver(){
+  if(S.phase!=='over')return;
+  const title=S.mode==='ai'?(S.winner===0?'Victory':'Defeat'):`${SIDE[S.winner]} wins`;
+  overlay(`<div class="eyebrow">Battle over · turn ${S.moves+1}</div>
+    <div class="big-side"><span class="chip o${S.winner}"></span><h2>${title}</h2></div>
+    <p>${S.reason}</p>
+    <p>Every rank and any unexploded mine is now shown on the board.</p>
+    <div class="row"><button class="btn primary" type="button" data-act="again" data-focus>Play again</button><button class="btn" type="button" data-act="review">Review the board</button><button class="btn" type="button" data-act="menu">Main menu</button></div>`);
+}
+
+/* ---------- game lifecycle ---------- */
+function newGame(mode){
+  if(S)clearInterval(S.timer);
+  S=freshState(mode);
+  formation(0);formation(1);
+  closeOverlay();
+  if(mode==='ai'){S.ready[1]=true;beginSetup(0)}
+  else showHandoff(0,'setup');
+}
+
+function act(a){
+  switch(a){
+    case'ai':case'local':newGame(a);break;
+    case'again':newGame(S.mode);break;
+    case'menu':showMenu();break;
+    case'review':closeOverlay();break;
+    case'restore':resumeSaved();break;
+    case'resume':
+      if(S.handoff)showHandoff(S.handoff.p,S.handoff.kind);else closeOverlay();
+      break;
+    case'handoff':{
+      const h=S.handoff;if(!h)break;
+      S.handoff=null;closeOverlay();
+      if(h.kind==='setup')beginSetup(h.p);
+      else{render();S.pending[h.p].forEach(r=>toast(r.text,r.kind));S.pending[h.p]=[]}
+      break;}
+    case'shuffle':if(S.phase==='setup'){formation(viewer());S.preview=null;render()}break;
+    case'ready':if(S.phase==='setup')markReady(viewer());break;
+    case'barH':case'barV':case'air':
+      if(!isHumanTurn())break;
+      S.tool=S.tool===a?'move':a;S.preview=null;S.selected=null;render();break;
+    case'cancel':S.tool='move';S.preview=null;render();break;
+  }
+}
+
+function playClick(x,y){
+  if(!isHumanTurn())return;
+  const me=S.turn,v=viewer();
+  if(S.tool==='barH'||S.tool==='barV'){
+    const cells=barCells(x,y,S.tool,v);
+    if(!validBar(cells)){S.preview=null;render();toast('A barricade needs two empty squares inside the board.','info');return}
+    if(S.preview&&S.preview.x===x&&S.preview.y===y){placeBarricade(me,cells,S.tool);S.tool='move';S.preview=null;render();return}
+    S.preview={x,y};render();return;
+  }
+  if(S.tool==='air'){
+    const t=pieceAt(x,y);
+    if(!t||t.owner===me){toast('Pick an enemy piece to strike.','info');return}
+    if(S.preview&&S.preview.x===x&&S.preview.y===y){S.tool='move';S.preview=null;airStrike(me,t);endTurn();return}
+    S.preview={x,y};render();return;
+  }
+  const p=pieceAt(x,y);
+  if(S.selected){
+    const sp=getPiece(S.selected);
+    if(legalMoves(sp).some(m=>m.x===x&&m.y===y)){S.selected=null;doMove(sp,x,y);endTurn();return}
+  }
+  if(p&&p.owner===me&&S.selected!==p.id){
+    if(!legalMoves(p).length)toast('That piece is boxed in and cannot move.','info');
+    S.selected=p.id;
+  }else S.selected=null;
+  render();
+}
+
+$('#board').addEventListener('click',e=>{
+  const b=e.target.closest('.sq');if(!b)return;
+  const x=+b.dataset.x,y=+b.dataset.y;
+  if(S.phase==='setup'&&!S.handoff)setupClick(x,y);
+  else if(S.phase==='play')playClick(x,y);
+});
+$('#board').addEventListener('mouseover',e=>{
+  document.querySelectorAll('.sq.hov').forEach(n=>n.classList.remove('hov'));
+  if(!isHumanTurn()||(S.tool!=='barH'&&S.tool!=='barV')||S.preview)return;
+  const b=e.target.closest('.sq');if(!b)return;
+  const cells=barCells(+b.dataset.x,+b.dataset.y,S.tool,viewer());
+  if(!validBar(cells))return;
+  cells.forEach(c=>{const n=document.querySelector(`.sq[data-x="${c.x}"][data-y="${c.y}"]`);if(n)n.classList.add('hov')});
+});
+$('#board').addEventListener('mouseleave',()=>document.querySelectorAll('.sq.hov').forEach(n=>n.classList.remove('hov')));
+$('#panel').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b&&!b.disabled)act(b.dataset.act)});
+$('#card').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b&&!b.disabled)act(b.dataset.act)});
+$('#menuBtn').addEventListener('click',showMenu);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.phase==='play'&&S.tool!=='move'){act('cancel')}});
+
+/* Opening view: a sample deployment behind the menu */
+S=freshState('ai');formation(0);formation(1);
+render();showMenu();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
