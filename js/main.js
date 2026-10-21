@@ -10,7 +10,7 @@ import { createDemoMonitor } from './demo.js';
 import { createRadio } from './radio.js';
 import { windshieldSVG, dashSVG, wheelSVG } from './cockpit.js';
 import { drawMountainTexture, drawGlowTexture, drawGroundDetailTexture, loadImage, loadFonts } from './textures.js';
-import { LANE, EYE, SPACING, SEA_LEVEL } from './world/config.js';
+import { LANE, EYE, ROUTE_LENGTH, SEA_LEVEL } from './world/config.js';
 import { createRoad } from './world/road.js';
 import { createZones, createTerrain, createWater } from './world/terrain.js';
 import { createSky, createTimeOfDay } from './world/sky.js';
@@ -27,7 +27,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ───────────────────────── stops along the road ───────────────────────── */
 const stops = buildStops(content);
-const END = (stops.length - 1) * SPACING;
+const END = ROUTE_LENGTH;
+const SPACING = END / Math.max(1, stops.length - 1); // road distance between two stops
 let billboardCount = 0;
 stops.forEach((s, i) => {
   s.index = i;

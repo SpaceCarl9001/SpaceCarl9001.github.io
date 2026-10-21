@@ -6,7 +6,8 @@
  *  the text-only version of the site is generated from this file, so
  *  you never have to touch the 3D code to update your portfolio.
  *
- *  - Add or remove skills / projects / jobs freely: the road grows or shrinks.
+ *  - Add or remove skills / projects / jobs freely: the stops spread evenly along a road of
+ *    fixed length (ROUTE_LENGTH in js/world/config.js), so the drive never gets longer.
  *  - `accent` colours are any CSS hex colour (#rrggbb).
  *  - Links that start with http(s) open in a new tab.
  * ─────────────────────────────────────────────────────────────────────
@@ -24,7 +25,7 @@ export default {
     summary: 'I started on the phones, led a support team, and now work as a real-time analyst who builds tools so the team works smarter.',
     body: [
       "I'm a Workforce Management professional with real-time analysis, team leadership and technical support experience. I'm data-driven about schedule adherence and performance monitoring, with a consistent track record of improving efficiency and customer satisfaction.",
-      'Alongside the day job I build web apps and automations for my team, like a PTO capacity dashboard, a no-click attendance notification flow and a shift bidding app that generates schedules on its own.',
+      "Alongside the day job I build web apps and automations for my team, like a PTO capacity dashboard, a no-click attendance notification flow, a shift bidding app that generates schedules on its own, and AuxPulse, which checks agents' Zoho time logs against Intercom.",
     ],
     facts: [
       { label: 'Based in', value: 'Dumaguete, PH' },
@@ -146,13 +147,14 @@ export default {
       groups: [
         { label: 'Languages', items: ['JavaScript', 'Python', 'SQL', 'HTML & CSS'] },
         { label: 'Frameworks', items: ['Next.js', 'Node.js'] },
-        { label: 'Build & ship', items: ['Supabase (Postgres + Auth)', 'Vercel', 'GitHub', 'VS Code'] },
+        { label: 'Build & ship', items: ['Supabase (Postgres + Auth)', 'Vercel', 'GitHub', 'GitHub Actions', 'VS Code'] },
         { label: 'AI-assisted dev', items: ['Claude / Claude Code', 'GitHub Copilot'] },
         { label: 'Automation', items: ['n8n', 'Google Apps Script', 'Slack webhooks', 'REST APIs', 'Advanced Excel & Google Sheets'] },
       ],
       highlights: [
         'Built and shipped a live shift bidding web app on Node.js, Supabase (Postgres + Auth) and Vercel that assigns schedules by agent rank and auto-generates full-coverage schedules.',
         'Automated attendance notifications end to end with Apps Script, Slack webhooks and the Assembled API, then used n8n to log every absence straight into Zoho.',
+        'Built AuxPulse: a Python sync on GitHub Actions that pulls Zoho and Assembled every hour, and a Next.js dashboard on Supabase and Vercel that shows every log mismatch.',
         'Built a PTO capacity and shrinkage dashboard in Google Apps Script, JavaScript and HTML.',
         'Built and shipped this 3D portfolio with AI-assisted development.',
       ],
@@ -161,6 +163,20 @@ export default {
 
   // Add `year: '2025'` or links like `links: [{ label: 'Demo', url: 'https://…' }]` to any project.
   projects: [
+    {
+      title: 'AuxPulse',
+      year: '2026',
+      accent: '#8b5cf6',
+      tagline: "Checks every agent's Zoho time logs against their Intercom statuses in Assembled.",
+      description:
+        "Matches each agent's log in, log out, breaks, lunch and other auxes in our Zoho time tracker against their Intercom statuses in Assembled, the source of truth. Every hour it pulls both systems, rebuilds each shift's timeline and turns every mismatch (over-breaks, late logins, breaks missing in Zoho, wrong aux types) into a card the RTA team can resolve, write back to Zoho, or escalate as an RTA log.",
+      tags: ['Adherence', 'Aux tracking', 'Zoho vs Intercom', 'RTA tooling'],
+      stack: ['Next.js', 'Python', 'Supabase (Postgres + Auth)', 'Vercel', 'GitHub Actions', 'Assembled API', 'Zoho Creator API', 'Claude Code'],
+      links: [
+        { label: 'Live demo', url: 'https://spacecarl9001.github.io/auxpulse-demo/' },
+        { label: 'Source code', url: 'https://github.com/SpaceCarl9001/auxpulse-demo' },
+      ],
+    },
     {
       title: 'PTO Capacity Dashboard',
       accent: '#ff6b35',

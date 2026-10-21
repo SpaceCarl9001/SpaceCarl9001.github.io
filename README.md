@@ -36,7 +36,8 @@ billboards, info cards, route bar and text version are all generated from it.
 | `projects` | One billboard per project, each with its own `accent` colour, tags and links. |
 | `contact`  | The blue "Destination" sign at the end: email and social links. |
 
-The road gets longer or shorter automatically when you add or remove skills or projects.
+The road keeps the same total length when you add or remove skills or projects: the stops spread
+evenly along it, so each one added just brings them a little closer together.
 
 To add a résumé, put the PDF in an `assets/` folder and add
 `{ label: 'Résumé', url: 'assets/resume.pdf' }` to `contact.links`.
@@ -112,8 +113,9 @@ serve.js          tiny local server for `npm start`
 
 These live in `js/world/config.js` unless noted:
 
-- `SPACING`: metres of road between stops (longer gaps mean more driving between stops).
+- `ROUTE_LENGTH`: metres of road from the start line to the last stop. Stops are spaced evenly
+  across it, so a longer route means more driving between stops.
 - `LANE`, `EYE`: lane position and driver eye height.
 - `KEYS` in `js/world/sky.js`: time-of-day keyframes (sky, sun, sea, cloud and light colours).
 - `createZones` in `js/world/terrain.js`: where each scene starts. Zones follow your sections, so
-  adding projects lengthens the coast automatically.
+  adding projects gives the coast a bigger share of the same road.
