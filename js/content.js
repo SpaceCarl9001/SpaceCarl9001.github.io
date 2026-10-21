@@ -135,7 +135,7 @@ export default {
       category: 'Tools & Platforms',
       accent: '#a78bfa',
       summary: 'The WFM and support platforms I work in every day.',
-      items: ['Assembled', 'Five9', 'Zendesk', 'Intercom', 'Zoho', 'Shopify', 'Jira', 'Asana', 'Slack'],
+      items: ['Assembled', 'Five9', 'Zendesk', 'Intercom', 'Zoho', 'n8n', 'Shopify', 'Jira', 'Asana', 'Slack'],
     },
     {
       // `featured` = the signature skill: a bigger, neon-framed billboard with grouped tools.
